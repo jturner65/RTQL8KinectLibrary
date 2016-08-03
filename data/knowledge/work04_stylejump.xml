@@ -1,0 +1,110 @@
+<knowledge>
+  <simulation dt="0.000500" mu="1.500000" cfm="0.000000">
+    <ground filename="/skel/ground1.skel"/>
+    <character filename="/skel/fullbody5_sphere.skel">
+      <kp value="[0, 0, 0, 0, 0, 0, 600, 600, 400, 200, 200, 200, 600, 600, 400, 200, 200, 200, 600, 600, 400, 100, 100, 400, 200, 200, 100, 60, 400, 200, 200, 100, 60]"/>
+      <kd value="[0, 0, 0, 0, 0, 0, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 10.3923, 10.3923, 8.48526, 4.24264, 4.24264, 8.48526, 6, 6, 4.24264, 3.28634, 8.48526, 6, 6, 4.24264, 3.28634]"/>
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800, 700, 500, 300, 100]"/>
+    </character>
+  </simulation>
+  <primitives>
+    <controller name="legpose_d"/>
+    <controller name="legpose_a"/>
+    <controller name="armpose_a"/>
+    <controller name="vf_x"/>
+    <controller name="vf_y"/>
+    <controller name="joints_hips"/>
+    <controller name="joints_knees"/>
+    <controller name="joints_heels"/>
+    <controller name="feedbackjoints_heels"/>
+    <controller name="feedbackjoints_hips"/>
+    <controller name="stiffjoints_shoulders"/>
+    <controller name="stiffjoints_hips"/>
+  </primitives>
+  <composite name="crouch" set_task="0.800000">
+    <initialpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.17, 0.06, 0, 0, 0, 0.17, -0.06, 0, 0, 0]"/>
+    <initialtargetpose target="[0, 0.93, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.176696, 0.564289, 0.0417657, 1.44008, -0.0831683, 0.176696, -0.564289, -0.0417657, 1.44008, 0.0831683]"/>
+    <terminate>
+      <timeout to="0.487667"/>
+    </terminate>
+    <evaluate>
+      <com value="[0, 0.808123, 0]" value2="[0, 0.541833, 0]"/>
+      <cpos value="[1, 0, 0]" index0="11.000000" index1="0.000000"/>
+      <upright value="[0, 0, 0]"/>
+    </evaluate>
+    <rig>
+      <controller name="legpose_d" regression="[-0.277218, -0.415276]"/>
+    </rig>
+    <rig>
+      <controller name="joints_hips" regression="[-0.0791498, 0.100366]"/>
+    </rig>
+  </composite>
+  <composite name="thrust" set_task="0.800000">
+    <initialpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.17, 0.06, 0, 0, 0, 0.17, -0.06, 0, 0, 0]"/>
+    <initialtargetpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.441695, -1.3089, 0.570791, 1.49535, -0.165943, 0.441695, 1.3089, -0.570791, 1.49535, 0.165943]"/>
+    <terminate>
+      <timeout to="0.200000"/>
+    </terminate>
+    <evaluate>
+      <comdot value="[0, 1.33333, 0]" value2="[0, 2.29, 0]"/>
+      <ang value="[0, 0, -0.0440025]"/>
+    </evaluate>
+    <prev>
+      <controller name="crouch" regression="[0.216444, 0.0526402]"/>
+    </prev>
+    <rig>
+      <controller name="vf_y" regression="[-0.429404, -0.384454]"/>
+    </rig>
+    <rig>
+      <controller name="vf_x" regression="[-0.0947689, -0.0855007]"/>
+    </rig>
+  </composite>
+  <composite name="airborne" set_task="0.500000">
+    <initialpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.17, 0.06, 0, 0, 0, 0.17, -0.06, 0, 0, 0]"/>
+    <initialtargetpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.441695, -1.3089, 0.570791, 1.49535, -0.165943, 0.441695, 1.3089, -0.570791, 1.49535, 0.165943]"/>
+    <terminate>
+      <anycontacts/>
+    </terminate>
+    <evaluate>
+      <maxcom value="[0, 1.13333, 0]" value2="[0, 1.44133, 0]"/>
+      <landing value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <controller name="thrust" regression="[-0.0578228, 0.85036]"/>
+    </prev>
+    <rig>
+      <controller name="legpose_a" regression="[0.392741, -0.333647]"/>
+    </rig>
+    <rig>
+      <controller name="joints_knees" regression="[0, 0]"/>
+    </rig>
+    <rig>
+      <controller name="stiffjoints_shoulders" regression="[-0.7, 0.0]"/>
+    </rig>
+  </composite>
+  <composite name="landing" set_task="0.800000" select="1">
+    <initialpose target="[0, 0.915, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.17, 0.06, 0, 0, 0, 0.17, -0.06, 0, 0, 0]"/>
+    <initialtargetpose target="[0, 0.93, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.200297, 0.296609, 0.210134, 0.804682, -0.148901, 0.200297, -0.296609, -0.210134, 0.804682, 0.148901]"/>
+    <terminate>
+      <timeout to="0.387333"/>
+    </terminate>
+    <evaluate>
+      <maxcom value="[0, 1.13333, 0]" value2="[0, 1.44133, 0]"/>
+      <upright value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <controller name="airborne" regression="[0, 1]"/>
+    </prev>
+    <rig>
+      <controller name="joints_hips" regression="[-0.0, 0.4]"/>
+    </rig>
+    <rig>
+      <controller name="joints_knees" regression="[-0.3, -0.1]"/>
+    </rig>
+    <rig>
+      <controller name="joints_heels" regression="[0.0, 0.3]"/>
+    </rig>
+  </composite>
+</knowledge>
+
+

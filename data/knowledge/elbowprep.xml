@@ -1,0 +1,48 @@
+<knowledge>
+  <simulation dt="0.000500" mu="1.000000" cfm="0.000000">
+    <ground filename="/skel/ground1.skel"/>
+    <character filename="/skel/fullbody3_longarm.skel">
+      <kp value="[0, 0, 0, 0, 0, 0, 600, 600, 400, 200, 200, 200, 600, 600, 400, 200, 200, 200, 600, 600, 400, 100, 100, 400, 200, 200, 100, 60, 400, 200, 200, 100, 60]"/>
+      <kd value="[0, 0, 0, 0, 0, 0, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 10.3923, 10.3923, 8.48526, 4.24264, 4.24264, 8.48526, 6, 6, 4.24264, 3.28634, 8.48526, 6, 6, 4.24264, 3.28634]"/>
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800, 700, 500, 300, 100]"/>
+    </character>
+  </simulation>
+  <primitives>
+    <controller name="legpose_d"/>
+    <controller name="legpose_a"/>
+    <controller name="armpose_a"/>
+    <controller name="vf_x"/>
+    <controller name="vf_y"/>
+    <controller name="joints_hips"/>
+    <controller name="joints_knees"/>
+    <controller name="joints_heels"/>
+    <controller name="feedbackjoints_heels"/>
+    <controller name="feedbackjoints_hips"/>
+    <controller name="stiffjoints_shoulders"/>
+    <controller name="stiffjoints_hips"/>
+  </primitives>
+  <composite name="lean" set_task="0.000000" select="1">
+    <!-- <initialpose target="[0, 0.75, 0, -3.14, 0, 0, 0.00, 0.0426496, -0.156664, -0.107044, -0.0977893, -0.0225632, 0.3600, -0.0337587, -0.850352, 0.0492966, -0.0891525, -0.032304, 0.100, 0.200, 0.0, -0.00862089, 0.0384067,  -->
+    <!--                      -0.2, -2.4, 0.80, 2.23, 0.395615,  -->
+    <!--                      0.2, 2.4, -0.80, 2.23, -0.395615]"/> -->
+    <initialpose target="[0, 0.75, 0, -3.24, 0, 0, 0.00, 0.1426496, -0.156664, -0.107044, -0.0977893, -0.0225632, 0.3600, -0.0337587, -0.850352, 0.0492966, -0.0891525, -0.032304, 0.100, 0.200, 0.0, -0.00862089, 0.0384067, 
+                         -0.2, -2.4, 0.80, 2.23, 0.395615, 
+                         0.2, 2.4, -0.80, 2.23, -0.395615]"/>
+
+    <terminate>
+      <timeout to="2.436333"/>
+    </terminate>
+    <evaluate/>
+    <rig>
+      <!-- <controller name="feedbackjoints_hips" regression="[-1.0, 0]"/> -->
+      <controller name="joints_hips" regression="[-0.4, 0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_knees" regression="[-0.0, 0]"/>
+    </rig>
+    <rig>
+      <controller name="armpose_a" regression="[-0.15, 0]"/>
+    </rig>
+
+  </composite>
+</knowledge>

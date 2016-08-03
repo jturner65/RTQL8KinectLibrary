@@ -1,0 +1,61 @@
+<gui>
+  <motionarrays use="1" />
+  <debugrendering value="0" />
+  <groundToChess value="0" />
+  <groundToMatt value="0" />
+  <removeGround value="0" />
+  <uiButtonChecked value="1" />
+
+  <!-- <knowledge>knowledge/empty.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test2.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test_thrust.xml</knowledge> -->
+  <!-- <knowledge>knowledge/standjump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test_00_lean.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test_01_thrust.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test_02_airborne.xml</knowledge> -->
+  <!-- <knowledge>knowledge/test_03_landing.xml</knowledge> -->
+  <!-- <knowledge>knowledge/multiple_00.xml</knowledge> -->
+  <!-- <knowledge>knowledge/headstand.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work03_stylejump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work04_stylejump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work06_roll.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work08_range_roll.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work09_jumproll.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work10_forwardjumproll.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work11_forward_breakfall.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work12_rolljump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work15_rj_jr_both.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work17_parkour.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work20_diveroll_again.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work22_bar_test.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work23_roll_split.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work24_swing.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work25_swing2.xml</knowledge> -->
+  <!-- <knowledge>knowledge/work26_bar_rise.xml</knowledge> -->
+
+  <!-- <knowledge>knowledge/final_B3_jump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_B4_rolling.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_B5_rolljump.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_B7_diveroll.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_B8_flip.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_C0_yoga.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_B0_bar.xml</knowledge> -->
+  <!-- <knowledge>knowledge/final_D0_bar.xml</knowledge> -->
+
+  <!-- <knowledge>knowledge/opt.xml</knowledge> -->
+  <!-- <knowledge>knowledge/opt2.xml</knowledge> -->
+  <!-- <knowledge>knowledge/opt3.xml</knowledge> -->
+ 
+ <!-- <knowledge>knowledge/shape.xml</knowledge> -->
+  <knowledge>knowledge/clustering.xml</knowledge>
+ 
+ <!-- <knowledge>knowledge/output.xml</knowledge> -->
+  <!-- <knowledge>knowledge/output_buffered.xml</knowledge> -->
+
+  <!-- <optimization mu="16" lambda="32" sigma="1.0" T="[0.0, 1.0]" /> -->
+  <optimization mu="8" lambda="16" sigma="1.0" T="[0.0, 0.2, 0.4, 0.6, 0.8, 1.0]" 
+                clusterMode="1" clusterMinDist="0.22"/>
+
+</gui>
+ 

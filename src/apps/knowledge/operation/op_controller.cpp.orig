@@ -1,0 +1,214 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Sehoon Ha <sha9@gatech.edu>
+ * Georgia Tech Graphics Lab
+ */
+
+#include "op_controller.h"
+#include "common/app_cppcommon.h"
+#include "controller/simpack.h"
+#include "controller/knowledge.h"
+#include "controller/rig.h"
+#include "controller/app_composite_controller.h"
+#include "controller/predicate.h"
+#include "controller/cost.h"
+
+namespace operation {
+////////////////////////////////////////////////////////////
+// class OpController implementation
+    OpController::OpController(controller::Knowledge* _kn)
+        : MEMBER_INIT_ARG(kn)
+    {
+    }
+    
+    OpController::~OpController() {
+    }
+
+    bool OpController::setTerminateTimeout(double t) {
+        using namespace controller;
+        LOG_INFO << "old = " << con()->toString();
+        Predicate* old_pr = con()->terminate();
+        if (old_pr) {
+            delete old_pr;
+        }
+
+        PredicateTimeout* new_pr = new PredicateTimeout();
+        new_pr->set_to(t);
+        new_pr->setConState(con()->conState());
+        con()->set_terminate(new_pr);
+
+        LOG_INFO << "new = " << con()->toString();
+
+        return true;
+    }
+
+    bool OpController::setTerminateNoContacts() {
+        using namespace controller;
+        LOG_INFO << "old = " << con()->toString();
+        Predicate* old_pr = con()->terminate();
+        if (old_pr) {
+            delete old_pr;
+        }
+
+        PredicateTimeout* new_pr = new PredicateTimeout();
+        new_pr->set_to(0.2);
+        new_pr->setConState(con()->conState());
+        con()->set_terminate(new_pr);
+
+        LOG_INFO << "new = " << con()->toString();
+
+        return true;
+    }
+
+    bool OpController::setTerminateAnyContacts() {
+        using namespace controller;
+        LOG_INFO << "old = " << con()->toString();
+        Predicate* old_pr = con()->terminate();
+        if (old_pr) {
+            delete old_pr;
+        }
+
+        PredicateAnyContacts* new_pr = new PredicateAnyContacts();
+        new_pr->setConState(con()->conState());
+        con()->set_terminate(new_pr);
+
+        LOG_INFO << "new = " << con()->toString();
+
+        return true;
+    }
+
+    bool OpController::addRig(const char* const rig_name) {
+        controller::Rig* rig
+            = dynamic_cast<controller::Rig*>(kn()->getController(rig_name));
+        CHECK_NOTNULL(rig) << "invalid rigname = " << rig_name;
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "rig = " << rig->toString();
+        LOG_INFO << "prev con = " << con()->toString();
+
+        con()->addRig(rig);
+
+        LOG_INFO << "curr con = " << con()->toString();
+
+
+        return true;
+    }
+
+    bool OpController::addPrev(const char* const prev_name) {
+        controller::AppCompositeController* prev
+            = dynamic_cast<controller::AppCompositeController*>(
+                kn()->getController(prev_name));
+        CHECK_NOTNULL(prev) << "invalid prevname = " << prev_name;
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "prev = " << prev->toString();
+        LOG_INFO << "prev con = " << con()->toString();
+
+        con()->addPrev(prev);
+
+        if (con()->hasValidInitialPose() == false) {
+            Eigen::VectorXd pose = prev->getInitialPose();
+            con()->setInitialPose(pose);
+        }
+
+        LOG_INFO << "curr con = " << con()->toString();
+        kn()->simpack()->reset();
+
+        return true;
+    }
+
+    bool OpController::addCostLanding() {
+        LOG_INFO << FUNCTION_NAME();
+        Eigen::Vector3d v0(Eigen::Vector3d::Zero());
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_LANDING, v0);
+        con()->cost()->addTerm(t);
+        return true;
+    }
+
+    bool OpController::addCostUpright() {
+        LOG_INFO << FUNCTION_NAME();
+        Eigen::Vector3d v0(Eigen::Vector3d::Zero());
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_UPRIGHT, v0);
+        con()->cost()->addTerm(t);
+        return true;
+    }
+
+
+
+    bool OpController::changeInitialPose(const Eigen::VectorXd& pose) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "pose = " << IO(pose);
+        con()->setInitialPose(pose);
+        kn()->simpack()->reset();
+        kn()->pushHint("clear");
+        return true;
+    }
+
+    bool OpController::move(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "v0 = " << IO(v0) << " v1 = " << IO(v1);
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_COM, v0, v1);
+        con()->cost()->addTerm(t);
+        return true;
+    }
+
+    bool OpController::moveMax(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "v0 = " << IO(v0) << " v1 = " << IO(v1);
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_MAXCOM, v0, v1);
+        con()->cost()->addTerm(t);
+        return true;
+    }
+
+    bool OpController::moveMin(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "v0 = " << IO(v0) << " v1 = " << IO(v1);
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_MINCOM, v0, v1);
+        con()->cost()->addTerm(t);
+    }
+
+    bool OpController::speed(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "v0 = " << IO(v0) << " v1 = " << IO(v1);
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_COMDOT, v0, v1);
+        con()->cost()->addTerm(t);
+    }
+
+    bool OpController::spin(const Eigen::Vector3d& v0) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "v0 = " << IO(v0);
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createCost(Cost::COST_TERM_L, v0);
+        con()->cost()->addTerm(t);
+        return true;
+    }
+
+    bool OpController::constraintPos(int node0, int node1, const Eigen::VectorXd& dir) {
+        LOG_INFO << FUNCTION_NAME();
+        LOG_INFO << "node0, 1 = " << node0 << ", " << node1 << " dir = " << IO(dir);
+
+        using namespace controller;
+        Cost::CostTerm* t = Cost::CostTerm::createConstraintPosition(dir, node0, node1);
+        con()->cost()->addTerm(t);
+        
+        return true;
+    }
+
+    controller::AppCompositeController* OpController::con() {
+        return kn()->simpack()->con();
+    }
+
+// class OpController ends
+////////////////////////////////////////////////////////////
+    
+    
+    
+} // namespace operation
+
+
+

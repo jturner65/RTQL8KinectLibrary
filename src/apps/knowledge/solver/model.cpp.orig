@@ -1,0 +1,653 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Sehoon Ha <sha9@gatech.edu>
+ * Georgia Tech Graphics Lab
+ */
+
+#include "model.h"
+#include "common/app_cppcommon.h"
+#include "controller/app_composite_controller.h"
+#include "controller/knowledge.h"
+#include "controller/simpack.h"
+#include "EigenQP.h"
+#include "mycma.h"
+#include "utils/UtilsMath.h"
+
+
+namespace solver {
+    
+////////////////////////////////////////////////////////////
+// struct ModelBezier implementation
+
+    ModelBezier::ModelBezier() {
+    }
+
+    ModelBezier::ModelBezier(int _dim) {
+        initialize(_dim);
+    }
+    
+    ModelBezier::~ModelBezier() {
+    }
+
+    void ModelBezier::initialize(int dim) {
+        this->dim   = dim;
+        this->alpha = Eigen::VectorXd::Zero(dim);
+        this->beta  = Eigen::VectorXd::Zero(dim);
+        this->C     = Eigen::MatrixXd::Identity(dim, dim);
+    }
+
+    double ModelBezier::fit(const std::vector<Sample*>& samples) {
+        LOG_INFO << "[ModelBezier.Fit] dim = " << dim
+                 << " num = " << samples.size();
+        // LOG_INFO << "[ModelBezier.Fit] # samples = " << samples.size();
+        const int DIM = this->dim;
+        double sum_w   = 0.0;
+        double sum_wy  = 0.0;
+        double sum_wy2 = 0.0;
+
+        Eigen::VectorXd sum_wp  = Eigen::VectorXd::Zero(DIM);
+        Eigen::VectorXd sum_wpy = Eigen::VectorXd::Zero(DIM);
+        Eigen::VectorXd sum_wp2 = Eigen::VectorXd::Zero(DIM);
+
+        Eigen::VectorXd reg = Eigen::VectorXd::Random(DIM * 2);
+        Eigen::VectorXd reg_alpha = reg.head(DIM);
+        Eigen::VectorXd reg_beta  = reg.tail(DIM);
+        double sum_value = 0.0;
+
+        BOOST_FOREACH(const Sample* s, samples) {
+            double t = s->task;
+            double e = s->value;
+            const Eigen::VectorXd& p = s->params;
+            
+            // double w = 1.0;
+            double w = 0.5 / (0.5 + e);
+
+            sum_w   += w;
+            sum_wy  += w * t;
+            sum_wy2 += w * t * t;
+
+            for (int i = 0; i < DIM; i++) {
+                sum_wp(i)  += w * p(i);
+                sum_wpy(i) += w * p(i) * t;
+                sum_wp2(i) += w * p(i) * p(i);
+            }
+
+            sum_value += w * ( (p - (reg_alpha + t * reg_beta)).squaredNorm() );
+            // cout << "t = " << t << " w = " << w << " p = " << p.transpose() << endl;
+            // cout << "reg_params = " << (reg_alpha + t * reg_beta).transpose() << endl;
+            // cout << "sum_value = " << sum_value << endl;
+        }
+
+        Eigen::MatrixXd D = Eigen::MatrixXd::Zero(DIM * 2, DIM * 2);
+        Eigen::VectorXd B = Eigen::VectorXd::Zero(DIM * 2);
+        double C = 0.0;
+        for (int i = 0; i < DIM; i++) {
+            int j = i + DIM;
+
+            D(i, i) = sum_w;
+            D(i, j) = sum_wy;
+            D(j, i) = sum_wy;
+            D(j, j) = sum_wy2;
+
+            B(i) = sum_wp(i);
+            B(j) = sum_wpy(i);
+
+            C += sum_wp2(i);
+        }
+
+        // LOG_INFO << "sum_value = " << sum_value;
+        // double mat_value = reg.dot(D * reg) - 2.0 * B.dot(reg) + C;
+        // LOG_INFO << "mat_value = " << mat_value;
+
+        for (int i = 0; i < D.rows(); i++) {
+            if (D(i, i) < 1e-4) {
+                D(i, i) = 1.0;
+            }
+        }
+
+        // LOG_INFO << "D = " << endl << D << endl;
+        // LOG_INFO << "B = " << endl << B << endl;
+
+        const int n = DIM * 2;
+        Eigen::MatrixXd G   = 2.0 * D;
+        Eigen::VectorXd g0  = -2.0 * B;
+
+        Eigen::MatrixXd CE  = Eigen::MatrixXd::Zero(n, 0);
+        Eigen::VectorXd ce0 = Eigen::VectorXd::Zero(0);
+
+        Eigen::MatrixXd CI  = Eigen::MatrixXd::Zero(n, 0);
+        Eigen::VectorXd ci0 = Eigen::VectorXd::Zero(0);
+
+        Eigen::VectorXd x   = Eigen::VectorXd::Zero(n);
+
+        double value = QP::solve_quadprog(G, g0, CE, ce0, CI, ci0, x) + C;
+        LOG_INFO << "value + C = " << value + C;
+
+        reg = x;
+        this->alpha = reg.segment(DIM * 0, DIM);
+        this->beta  = reg.segment(DIM * 1, DIM);
+        LOG_INFO << "alpha = " << IO(this->alpha);
+        LOG_INFO << "beta  = " << IO(this->beta);
+        this->regressionError = value + C;
+        return this->regressionError;
+    }
+
+    Eigen::VectorXd ModelBezier::predict(double t) {
+        return this->alpha + this->beta * t;
+    }
+
+    void ModelBezier::update(controller::Knowledge* kn) {
+        updateModel(kn);
+    }
+
+    void ModelBezier::updateModel(controller::Knowledge* kn) {
+        kn->simpack()->con()->setRegressionParams( alpha, beta );
+    }
+
+// struct ModelBezier ends
+////////////////////////////////////////////////////////////
+    
+
+////////////////////////////////////////////////////////////
+// struct ModelPoint implementation
+    ModelPoint::ModelPoint(int _dim, controller::Knowledge* _kn)
+        : dim(_dim)
+        , cma(NULL)
+        , kn(_kn)
+    {
+    }
+    
+    ModelPoint::~ModelPoint() {
+        if (cma != NULL) delete cma;
+    }
+
+    void ModelPoint::init(const double _sigma,
+                          const int _mu,
+                          const std::vector<Sample*>& samples) {
+        int n = samples.size();
+        if (n == 0) {
+            return;
+        }
+        this->sigma = _sigma;
+        this->mu    = _mu;
+
+        // 1. Calculate the mean
+        Eigen::VectorXd m(Eigen::VectorXd::Zero(dim));
+        FOREACH(Sample* s, samples) {
+            Eigen::VectorXd x = s->params;
+            m += x;
+        }
+        m /= n;
+
+        // 2. Calculate the covariance
+        Eigen::MatrixXd C(Eigen::MatrixXd::Zero(dim, dim));
+        FOREACH(Sample* s, samples) {
+            Eigen::VectorXd x = s->params;
+            C += (x - m) * ((x - m).transpose());
+        }
+        if (n > dim) {
+            C /= (n - 1);
+        } else {
+            // Initial covariance matrix size when n = 1
+            double INIT_COV_MATRIX_RAD = 0.5;
+            C = INIT_COV_MATRIX_RAD * Eigen::MatrixXd::Identity(dim, dim);
+        }
+
+        this->m = m;
+        this->C = C;
+
+        // 3. Calculate the best fitness
+        this->bestFitness = 100.0;
+        this->bestParams  = Eigen::VectorXd::Zero(dim);
+        FOREACH(Sample* s, samples) {
+            if (this->bestFitness > s->value) {
+                this->bestFitness = s->value;
+                this->bestParams  = s->params;
+            }
+        }
+
+        cma = new MyCMA();
+        cma->init(dim,       // Dimension
+                  _sigma,    // Sigma
+                  _mu,       // Mu = # of parents
+                  m,         // Mean
+                  C
+            );        // Covariance
+
+        // cout << "mean = " << IO(m) << endl;
+        // cout << "Cov = " << endl << C << endl;
+        // cout << "Volumn = " << this->volumn() << " "
+        //      << IO(this->diagonalOfCov()) << endl;
+        // cout << "best = " << bestFitness << "(" << log(bestFitness) << ")" << endl;
+    }
+
+    void ModelPoint::init(const double _sigma,
+                          const int _mu,
+                          const int _index,
+                          const Eigen::VectorXd _m,
+                          const std::vector<Sample*>& samples) {
+        int n = samples.size();
+        if (n == 0) {
+            return;
+        }
+        this->sigma = _sigma;
+        this->mu    = _mu;
+        // 1. Calculate the mean
+        Eigen::VectorXd m = _m;
+
+        // 2. Calculate the covariance
+        Eigen::MatrixXd C(Eigen::MatrixXd::Zero(dim, dim));
+        FOREACH(Sample* s, samples) {
+            Eigen::VectorXd x = s->params;
+            C += (x - m) * ((x - m).transpose());
+        }
+        if (n > dim) {
+            C /= (n - 1);
+        } else {
+            // Initial covariance matrix size when n = 1
+            double INIT_COV_MATRIX_RAD = 0.5;
+            C = INIT_COV_MATRIX_RAD * Eigen::MatrixXd::Identity(dim, dim);
+        }
+
+        // m = Eigen::VectorXd::Zero(dim);
+        // C = 0.1 * Eigen::MatrixXd::Identity(dim, dim);
+
+        this->m = m;
+        this->C = C;
+
+
+        // 3. Calculate the best fitness
+        this->bestFitness = 100.0;
+        this->bestParams  = Eigen::VectorXd::Zero(dim);
+        FOREACH(Sample* s, samples) {
+            double v = s->tvalues[_index];
+            if (this->bestFitness > v) {
+                this->bestFitness = v;
+                this->bestParams  = s->params;
+            }
+        }
+
+        if (cma) delete cma;
+        cma = new MyCMA();
+        cma->init(dim,       // Dimension
+                  _sigma,    // Sigma
+                  _mu,       // Mu = # of parents
+                  m,         // Mean
+                  C
+            );        // Covariance
+
+        // LOG_INFO << "mean = " << IO(m);
+        // LOG_INFO << "Cov = " << endl << C;
+        // LOG_INFO << "Volumn = " << this->volumn() << " "
+        //          << IO(this->diagonalOfCov());
+        // LOG_INFO << "best = " << bestFitness << "(" << log(bestFitness) << ")";
+    }
+    void ModelPoint::init(const double _sigma,
+                          const int _mu,
+                          const Eigen::VectorXd _m,
+                          const Eigen::MatrixXd _C) {
+        this->sigma = _sigma;
+        this->mu    = _mu;
+
+        // 1. Calculate the mean
+        Eigen::VectorXd m = _m;
+
+        // 2. Calculate the covariance
+        Eigen::MatrixXd C = _C;
+
+        this->m = m;
+        this->C = C;
+
+
+        // 3. Calculate the best fitness
+        this->bestFitness = 100.0;
+        this->bestParams  = Eigen::VectorXd::Zero(dim);
+
+        cma = new MyCMA();
+        cma->init(dim,       // Dimension
+                  _sigma,    // Sigma
+                  _mu,       // Mu = # of parents
+                  m,         // Mean
+                  C
+            );        // Covariance
+
+        // LOG_INFO << "mean = " << IO(m);
+        // LOG_INFO << "Cov = " << endl << C;
+        // LOG_INFO << "Volumn = " << this->volumn() << " "
+        //          << IO(this->diagonalOfCov());
+        // LOG_INFO << "best = " << bestFitness << "(" << log(bestFitness) << ")";
+
+    }
+
+    // ModelPoint* ModelPoint::interpolate(ModelPoint* lhs,
+    //                                     ModelPoint* rhs,
+    //                                     double w) {
+    //     using namespace Eigen;
+    //     int dim = lhs->dim;
+    //     controller::Knowledge* kn = lhs->kn;
+
+    //     double w0 = (1.0 - w);
+    //     double w1 = w;
+
+    //     Eigen::VectorXd m = w0 * lhs->m + w1 * rhs->m;
+
+    //     JacobiSVD<MatrixXd> svd0(lhs->C,  ComputeFullU | ComputeFullV);
+    //     Eigen::MatrixXd U0 = svd0.matrixU();
+    //     Eigen::VectorXd d0 = svd0.singularValues();
+    //     JacobiSVD<MatrixXd> svd1(rhs->C,  ComputeFullU | ComputeFullV);
+    //     Eigen::MatrixXd U1 = svd1.matrixU();
+    //     Eigen::VectorXd d1 = svd1.singularValues();
+
+    //     Eigen::MatrixXd U = Eigen::MatrixXd::Zero(dim, dim);
+    //     for (int i = 0; i < dim; i++) {
+    //         Eigen::VectorXd u = U0.col(i);
+    //         Eigen::VectorXd v = U1.col(i);
+    //         if (u.dot(v) < 0.0) {
+    //             v = -v;
+    //         }
+    //         Eigen::VectorXd dir = w0 * u + w1 * v;
+    //         dir /= dir.norm();
+    //         U.col(i) = dir;
+    //     }
+    //     Eigen::VectorXd d = (w0 * d0.cwiseSqrt() + w1 * d1.cwiseSqrt());
+    //     d = d.cwiseProduct(d);
+    //     Eigen::MatrixXd C = U * d.asDiagonal() * U.transpose();
+
+    //     // cout << "===========================" << endl;
+    //     // cout << "w  = " << w << endl;
+    //     // cout << "U  = " << U << endl;
+    //     // cout << "d  = " << d << endl;
+
+    //     // cout << "lhs->m = " << IO(lhs->m);
+    //     // cout << "rhs->m = " << IO(rhs->m);
+    //     // cout << "m  = " << IO(m) << endl;
+    //     // cout << "C  = " << endl << C << endl;
+
+    //     // cout << endl;
+
+    //     ModelPoint* ret = new ModelPoint(dim, kn);
+    //     ret->init(lhs->sigma, lhs->mu, m, C);
+    //     return ret;
+    // }
+
+
+    ModelPoint* ModelPoint::interpolate(ModelPoint* lhs,
+                                        ModelPoint* rhs,
+                                        double w) {
+        using namespace Eigen;
+        int dim = lhs->dim;
+        controller::Knowledge* kn = lhs->kn;
+
+        double w0 = (1.0 - w);
+        double w1 = w;
+
+        Eigen::VectorXd m = w0 * lhs->m + w1 * rhs->m;
+
+        LLT<MatrixXd> llt0(lhs->C);
+        Eigen::MatrixXd L0 = llt0.matrixL();
+        LLT<MatrixXd> llt1(rhs->C);
+        Eigen::MatrixXd L1 = llt1.matrixU();
+
+        MatrixXd Lw = w0 * L0 + w * L1;
+        MatrixXd C = Lw * Lw.transpose();
+
+        ModelPoint* ret = new ModelPoint(dim, kn);
+        ret->init(lhs->sigma, lhs->mu, m, C);
+        return ret;
+    }
+
+    Sample* ModelPoint::create() {
+        Sample* s = new Sample(kn->simpack()->con());
+        // cout << "create" << endl;
+        cma->create(s->params);
+        for (int i = 0; i < dim; i++) {
+            double p = s->params(i);
+            double GAP = 0.005;
+            if (p > 1.0) {
+                p = 0.999 - rtql8::utils::random(0.0, GAP);
+            } else if (p < -1.0) {
+                p = -(0.999 - rtql8::utils::random(0.0, GAP));
+            }
+            s->params(i) = std::max(-0.999, std::min(s->params(i), 0.999));
+        }
+        // cout << "create OK" << endl;
+        return s;
+    }
+
+    void ModelPoint::update(const std::vector<Sample*>& samples) {
+        int mu = samples.size();
+        if (mu < 2) {
+            LOG_WARNING << "not enough samples to update";
+            return;
+        }
+
+        double          sampleBestFitness = 100.0;
+        Eigen::VectorXd sampleBestParams  = Eigen::VectorXd::Zero(dim);
+
+        FOREACH(Sample* s, samples) {
+            if (sampleBestFitness > s->value) {
+                sampleBestFitness = s->value;
+                sampleBestParams  = s->params;
+            }
+        }
+
+        if (sampleBestFitness > this->bestFitness) {
+            LOG_WARNING << "new population is not as good as we expected: "
+                        << "old = " << this->bestFitness << " "
+                        << "new = " << sampleBestFitness << " ";
+            return;
+        }
+
+
+        ChromosomeT<double> point(dim);
+        for (int i = 0; i < dim; i++) point[i] = 0.0;
+        PopulationT<double> population(mu, point, ChromosomeT<double>(dim));
+        population.setMinimize();
+
+        for (int i = 0; i < samples.size(); i++) {
+            Sample* s = samples[i];
+            IndividualT<double>& ind = population[i];
+            for (int j = 0; j < dim; j++) {
+                ind[0][j] = s->params(j);
+            }
+        }
+
+        double          oldBest = this->bestFitness;
+        Eigen::VectorXd oldMean = cma->getMean();
+        Eigen::MatrixXd oldCov  = cma->getCov();
+        
+        this->bestFitness = std::min(this->bestFitness, sampleBestFitness);
+        cma->updateWeight(mu);
+        cma->updateStrategyParameters(population);
+        LOG_INFO << "best  = " << this->bestFitness << " <- " << oldBest;
+        LOG_INFO << "mean  = " << IO(cma->getMean()) << " <- " << IO(oldMean);
+        LOG_INFO << "cov   = " << endl << cma->getCov()
+                 << endl << " <- " << endl << IO(oldMean);
+        // cout << "best = " << this->bestFitness << endl;
+        // cout << "mean = " << IO(cma->getMean()) << endl;
+        // cout << "cov = " << cma->getCov() << endl;
+        // cout << "===> " << endl;
+        // cout << "best = " << this->bestFitness << endl;
+        // cout << "mean = " << IO(cma->getMean()) << endl;
+        // cout << "cov = " << cma->getCov() << endl;
+        // cout << "mean = " << IO(m) << endl;
+        // cout << "Cov = " << endl << C << endl;
+        // cout << "===> " << endl;
+        for (int i = 0; i < dim; i++) {
+            this->m(i) = cma->x[i];
+            for (int j = 0; j < dim; j++) {
+                this->C(i, j) = cma->C(i, j);
+            }
+        }
+        // cout << "mean = " << IO(m) << endl;
+        // cout << "Cov = " << endl << C << endl;
+        LOG_INFO << "ModelPoint::update OK";
+    }
+
+    void ModelPoint::updateBestValues(const std::vector<Sample*>& samples,
+                                      int index) {
+        FOREACH(Sample* s, samples) {
+            double v = s->tvalues[index];
+            if (this->bestFitness > v) {
+                this->bestFitness = v;
+                this->bestParams  = s->params;
+            }
+        }
+    }
+
+    Eigen::VectorXd ModelPoint::diagonalOfCov() {
+        using namespace Eigen;
+        JacobiSVD<MatrixXd> svd(C,  ComputeFullU | ComputeFullV);
+        Eigen::VectorXd d = svd.singularValues();
+        return d;
+    }
+
+    double ModelPoint::volumn() {
+        using namespace Eigen;
+        JacobiSVD<MatrixXd> svd(C,  ComputeFullU | ComputeFullV);
+        // Eigen::MatrixXd U = svd.matrixU();
+        // Eigen::MatrixXd V = svd.matrixV();
+        Eigen::VectorXd d = svd.singularValues();
+        
+        // cout << "U = " << U << endl;
+        // cout << "V = " << V << endl;
+        // cout << "d = " << d.transpose() << endl;
+        // Eigen::MatrixXd temp = U * (d.asDiagonal()) * (V.transpose());
+        // cout << "temp = " << temp << endl;
+        double v = 0.0;
+        for (int i = 0; i < d.size(); i++) {
+            // v *= d(i);
+            if (v < d(i)) {
+                v = d(i);
+            }
+        }
+        const double MIN_VOLUMN = 0.0001;
+        if (v < MIN_VOLUMN) {
+            return MIN_VOLUMN;
+        }
+        return v;
+        // return d.squaredNorm();
+    }
+
+    double ModelPoint::prob(const Eigen::VectorXd& x) {
+        using namespace Eigen;
+        // Ref: http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+        // Density function
+        const double PI = 3.14159265359;
+        const double k  = dim;
+        FullPivLU<MatrixXd> lu(C);
+
+        double det = lu.determinant();
+        MatrixXd INV = lu.inverse();
+
+        double term0 = pow(2 * PI, k) * det;
+        double term1 = -0.5 * (x - m).dot( INV * (x - m) );
+        double p = (1.0 / sqrt(term0)) * exp( term1 );
+        return p;
+    }
+
+    double ModelPoint::loglikelihood(const Eigen::VectorXd& x) {
+        using namespace Eigen;
+        // Ref: http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+        // Density function
+        const double PI = 3.14159265359;
+        const double N  = dim;
+        FullPivLU<MatrixXd> lu(C);
+
+        double det = lu.determinant();
+        MatrixXd INV = lu.inverse();
+
+        double term0 = -0.5 * N * log(2 * PI * det * det);
+        double term1 = -0.5 * (x - m).dot( INV * (x - m) );
+        double l = term0 + term1;
+        return l;
+    }
+
+
+// struct ModelPoint ends
+////////////////////////////////////////////////////////////
+    
+
+////////////////////////////////////////////////////////////
+// struct ModelCombined implementation
+    ModelCombined::ModelCombined(int _DIM,
+                                 const Eigen::VectorXd& _tasks,
+                                 controller::Knowledge* _kn)
+        : DIM(_DIM)
+        , loop(0)
+        , tasks(_tasks)
+        , kn(_kn)
+        , line(NULL)
+        , isDegenerated(false)
+    {
+        this->line = new ModelBezier(DIM);
+        for (int i = 0; i < NTASKS(); i++) {
+            // covs.push_back(NULL);
+
+            ModelPoint* pt = new ModelPoint(DIM, kn);
+            pt->T = tasks(i);
+            covs.push_back(pt);
+            activated.push_back(0);
+        }
+        
+    }
+    
+    ModelCombined::~ModelCombined() {
+        FOREACH(ModelPoint* pt, covs) {
+            if (pt != NULL) delete pt;
+        }
+        covs.clear();
+        delete line;
+        line = NULL;
+    }
+
+    std::vector<double> ModelCombined::bestValueArray() {
+        std::vector<double> values;
+        for (int i = 0; i < covs.size(); i++) {
+            ModelPoint* pt = covs[i];
+            if (pt == NULL) continue; // For degenerate cases
+            double v = pt->bestFitness;
+            values.push_back(v);
+            if (this->isDegenerated) {
+                break;
+            }
+        }
+        return values;
+    }
+
+    int ModelCombined::left(int index) {
+        for (int i = index; i >= 0; i--) {
+            if (isActivated(i)) {
+                return i;
+            }
+        }
+        LOG_FATAL << "Invalid Model: lack of activated covariances ";
+        exit(0);
+        return -1;
+    }
+    
+
+    int ModelCombined::right(int index) {
+        for (int i = index; i < covs.size(); i++) {
+            if (isActivated(i)) {
+                return i;
+            }
+        }
+        LOG_FATAL << "Invalid Model: lack of activated covariances ";
+        exit(0);
+        return -1;
+    }
+
+// struct ModelCombined ends
+////////////////////////////////////////////////////////////
+    
+
+
+
+
+    
+} // namespace solver
+
+
+

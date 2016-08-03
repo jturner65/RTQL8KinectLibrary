@@ -1,0 +1,397 @@
+/* Rtql8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): John Turner <jturner65@gatech.edu>
+ * Georgia Tech Graphics Lab
+ * 
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine 
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights 
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow 
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "GuiKinController.h"
+#include "utils/UtilsMath.h"
+#include <sstream>
+#include "kinect/KinCntrlrXMLReader.h"
+#include <boost/algorithm/string.hpp>
+#include "common/app_cppcommon.h"
+#include "common/fullbody1.h"
+
+#include "controller/knowledge.h"
+#include "controller/simpack.h"
+#include "controller/app_composite_controller.h"
+#include "controller/rapidxml_helper.h"
+
+#include "application.h"
+
+using namespace rtql8::kinect;
+
+namespace gui {
+
+    GuiKinController::GuiKinController(Application* _app)
+        : KinectController()
+        , app(_app) {
+        rtql8::kinect::KinCntrlrXMLReader config(this);
+        config.readFile(RTQL8_DATA_PATH"kinectui.xml");
+
+        buildDynamicPage();
+        
+        dict.clear();
+    }//cnstrctr
+
+    void GuiKinController::buildDynamicPage() {
+        KinUIPage* page = new KinUIPage();
+        page->name = "create4";
+        controller::Knowledge* kn = app->kn();
+        std::vector<std::string> names = kn->getCompositeControllerNames();
+        double x = 50;
+        double y = 50;
+        double DX = 150;
+        double SX = 80;
+        double SY = 120;
+        double A = 0.7;
+        for (int i = 0; i < names.size(); i++) {
+            KinUIButton* btn = new KinUIButton(0, 0);
+            btn->setLoc(x, y);
+            btn->setDim(SX, SY);
+            double r = rtql8::utils::random(0.0, 1.0);
+            double g = rtql8::utils::random(0.0, 1.0);
+            double b = rtql8::utils::random(0.0, 1.0);
+            btn->setColor(r, g, b, A);
+            btn->setLabel(names[i].c_str());
+            btn->setHotSpot(30, 30);
+            std::string onclick
+                = (boost::format("set:previous %s;page:create5") % names[i]).str();
+            btn->setOnClick(onclick);
+            LOG_INFO << FUNCTION_NAME() << " : " << names[i] << ",onclick = " << onclick;
+            page->addUIButton(btn);
+            x += DX;
+        }
+        this->addPage(page);
+    }
+
+    GuiKinController::~GuiKinController() {
+    }//dstrctr
+
+
+    int GuiKinController::initIKSkel(){
+        int numD = kinSkel->getNumDofs();
+        Eigen::VectorXd q(numD);
+        //modify skeleton's initial position to face camera and stand a bit more naturally
+        kinSkel->getPose(q);
+        q[4] = -2.1;
+        q[9] = -0.17;
+        q[15]= -0.17;
+        kinSkel->setPose(q, true, true);
+        return 0;
+    }//initIKSkel
+
+    int GuiKinController::initKinData(){
+        KC_flags[_KC_DISP_DEPTH] = true;
+        KC_flags[_KC_DISP_RGB	] = true;
+        KC_flags[_KC_DISP_AVATAR] = true;
+        KC_flags[_KC_DISP_MRKRS] = true;
+        KC_flags[_KC_DISP_AVTLOC] = true;
+        KC_flags[_KC_DISP_RAWSK] = true;
+        KC_flags[_KC_DISP_FILTSK] = true;
+        KC_flags[_KC_DISP_SKCLIP] = true;
+        KC_flags[_KC_DISP_UI] = true;
+        KC_flags[_KC_PROC_2D_DGRAB]  = true;
+        return 0;
+    }//initIKSkel
+
+
+    void GuiKinController::buildUI(vector<int>& numCmps){
+
+    }//buildUI
+
+    void GuiKinController::setDispButtons(){
+    }//setDispButtons
+
+///////
+//call these from timer loop
+//////
+//debug info for gui display
+    void GuiKinController::onTimerQuery(){
+        if(kinHNDLR->kinSkelHandlerAvail()){
+            skelJointStrs =  kinHNDLR->getBestKinSkelJointLocsStrs();
+            if(kinSpeechRecog != ""){parseSpeechCommand();}
+            //	kinSpeechRecog = kinHNDLR->getSpchRecogResult();
+        }//if valid skel handler
+    }//onTimerQuery
+
+///////
+///call these from draw
+///////
+
+    void GuiKinController::onDrawUpdate(rtql8::renderer::RenderInterface* mRI){
+        //KinectController::drawUI();
+        glPushMatrix();
+        glTranslatef(0,0,-3);
+        if(nullptr != kinSkel){
+            //cout<<"skel ! null"<<endl;
+            glPolygonMode(GL_FRONT_AND_BACK,  GL_LINE);
+            if(KC_flags[_KC_DISP_AVATAR]){kinSkel->draw(mRI);}
+            if(KC_flags[_KC_DISP_MRKRS]){kinSkel->drawMarkers(mRI);}
+        }
+        skelDrawn = true;
+        glPopMatrix();
+        onDrawUpdate();
+    }//onDrawUpdate
+
+//display IK skeleton and various kinect-derived information and images
+    void GuiKinController::onDrawUpdate(){
+        onTimerQuery();	
+        //kinect stuff drawn here 
+        if(kinHNDLR->kinValid()) {
+            kinectRConnTimer = 90;
+            glPushMatrix();
+            glTranslatef(0,-1,-3);
+            if(KC_flags[_KC_DISP_DEPTH]){
+                drawKinDpthHandImage(true, -4,4,-5,1,1,1);
+                drawKinDpthHandImage(false, 4,4,-5,1,1,1);
+                drawKinImage(true,0,0,-5,1,1,1);
+            }//if using depth image
+            if(KC_flags[_KC_DISP_RGB]) {
+                drawKinImage(false,0,5,-5,.2f,.2f,1);
+            }
+			
+            if(KC_flags[_KC_USE_STRM_SKEL]){
+                glPushMatrix();
+                glTranslatef(0,1,0);
+                if(kinHNDLR->kinSkelHandlerAvail()){
+                    drawKinSkelData();
+                }
+                glPopMatrix();
+            } //if using skel stream/IK
+            glPopMatrix();
+        }//if kinect connected
+        else if (0 >= kinectRConnTimer) {
+            kinHNDLR->checkKinectConn();kinectRConnTimer = 90;
+        }
+        else{
+            --kinectRConnTimer;
+        }
+
+        //draw skeleton visualisations
+        if((nullptr != kinSkel) && (!skelDrawn)){
+            if(KC_flags[_KC_DISP_AVATAR]){kinSkel->draw();}
+            if(KC_flags[_KC_DISP_MRKRS]){kinSkel->drawMarkers();}
+        }
+        KinectController::onDrawUpdate();
+        skelDrawn = false;
+        // SetFlags(_KC_PROC_IK, true);
+    }//onDrawUpdate
+
+    void GuiKinController::parseSpeechCommand(){
+        if (kinSpeechRecog == "IK MODE"){
+            clog<<"GuiKinController : Change to IK mode"<<endl;
+            SetFlags(_KC_PROC_IK, true);
+        } else if (kinSpeechRecog == "UI MODE"){
+            clog<<"GuiKinController : Change to UI mode"<<endl;
+            SetFlags(_KC_PROC_HANDS_2D, true);
+        } else if (kinSpeechRecog == "3D MODE"){
+            clog<<"GuiKinController : Change to 3D mode"<<endl;
+            SetFlags(_KC_PROC_HANDS_3D, true);
+        } else if (kinSpeechRecog == "GRAB MODE ON"){
+            clog<<"GuiKinController : Enable Depth-based hand grab for dragging"<<endl;
+            if(KC_flags[_KC_PROC_HANDS_2D]){
+                SetFlags(_KC_PROC_2D_DGRAB, true);
+            }           //only turn on if in 2d ui mode
+        } else if (kinSpeechRecog == "GRAB MODE OFF"){
+            clog<<"GuiKinController : Disable Depth-based hand grab for dragging"<<endl;
+            SetFlags(_KC_PROC_2D_DGRAB, false);
+        } else {
+            clog<<"GuiKinController : Unhandled Recognized Phrase : "<<kinSpeechRecog<<endl;
+        }
+        clearSpeechRecogVals();	
+    }//parseSpeechCommand
+
+//draw these programmatically
+//custom handling - basic handling done in base class
+    bool GuiKinController::checkUIElements(int& x, int& y, int& d, 
+                                            bool isMouse, int hand, int evnt){
+
+        bool clickedOn = false;
+        //call base class version to handle actual object events
+        bool result = KinectController::checkUIElements(x, y, d, isMouse, hand, evnt);
+        for (int i = 0; i < numUIButtons(); i++) {
+            KinUIButton* btn  = getUIButton(i);
+            if (btn->isClicked() == false) {
+                continue;
+            }
+
+            LOG_INFO << "CLICKED!! " << btn->getLabel()
+                     << " onclick = " << btn->getOnClick();
+            std::string onclick = btn->getOnClick();
+            std::vector<std::string> commands;
+            boost::split(commands, onclick, boost::is_any_of(";"));
+            for (int j = 0; j < commands.size(); j++) {
+                this->onCommand(commands[j]);
+            }
+            break;
+        }
+        return result;
+    }//checkUIElements
+
+    bool GuiKinController::onCommand(const std::string& command) {
+        LOG_INFO << "command = " << command;
+        std::vector<std::string> tokens;
+        boost::split(tokens, command, boost::is_any_of("\t :"));
+        int n = tokens.size();
+        if (n < 1) {
+            LOG_WARNING << "command not detected";
+            return false;
+        }
+        std::string cmd = tokens[0];
+
+        if (cmd == "page" && n == 2) {
+            onCommandPage(tokens);
+        } else if (cmd == "cmd") {
+            onCommandCmd(tokens);
+        } else if (cmd == "create") {
+            onCommandCreate(tokens);
+        } else if (cmd == "set") {
+            onCommandSet(tokens);
+        }
+        return true;
+    }
+
+    void GuiKinController::onCommandSet(std::vector<std::string>& tokens) {
+        filterTokens(tokens);
+        int n = tokens.size();
+        if (n == 2 && tokens[1] == "clear") {
+            LOG_INFO << ">>>> dictionary clear";
+            dict.clear();
+            return;
+        } else if (n == 3) {
+            std::string var = tokens[1];
+            std::string val = tokens[2];
+            LOG_INFO << ">>>> dictionary " << var << " <- " << val;
+            dict[var] = val;
+            return;
+        }
+    }
+
+    void GuiKinController::filterTokens(std::vector<std::string>& tokens) {
+        for (int i = 0; i < tokens.size(); i++) {
+            if (tokens[i][0] == '#') {
+                tokens[i] = tokens[i].substr(1);
+                KinUISlider* sld = this->getUISlider(tokens[i].c_str());
+                if (sld == NULL) {
+                    LOG_FATAL << "invalid UI: " << tokens[i];
+                    exit(0);
+                }
+                // double v = 1.0 - sld->getSliderPos();
+                double v = sld->getSliderPos();
+                tokens[i] = boost::lexical_cast<std::string>(v);
+            }
+        }
+    }
+
+    void GuiKinController::onCommandPage(std::vector<std::string>& tokens) {
+        std::string nextpage = tokens[1];
+        gotoPage(nextpage.c_str());
+    }
+
+    void GuiKinController::onCommandCmd(std::vector<std::string>& tokens) {
+        std::stringstream sout;
+        filterTokens(tokens);
+        for (int i = 1; i < tokens.size(); i++) {
+            sout << tokens[i] << " ";
+        }
+        LOG_INFO << ">>>> cmd = [" << sout.str() << "]";
+        bool result = app->interpret(sout.str().c_str());
+        LOG_INFO << "result = " << result;
+
+        gotoPage("star");
+    }
+
+    void GuiKinController::onCommandCreate(std::vector<std::string>& tokens) {
+        LOG_INFO << FUNCTION_NAME();
+        std::stringstream sout;
+        using boost::format;
+        std::string name = dict["name"];
+        
+        sout << format("<composite name=\"%s\" set_task=\"0.0\">") % name << endl;
+        sout << format("<initialpose target=\"[0, 0.97, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]\" />" ) << endl;
+        if (dict["terminate"] == "timeout") {
+            sout << format("<terminate><timeout to=\"%s\" /> </terminate>") % dict["t"] << endl;
+        } else if (dict["terminate"] == "nocontact") {
+            sout << format("<terminate><timeout  to=\"0.2\"/> </terminate>") << endl;
+        }
+        sout << format("<evaluate></evaluate>") << endl;
+        sout << format("</composite>") << endl;
+
+        // cout << "xml string = " << sout.str() << endl;
+        app->kn()->createController(sout.str().c_str());
+    }
+
+
+    void GuiKinController::gotoPage(const char* const name) {
+        LOG_INFO << "Go to page = [" << name << "]";
+        KinUIPage* page = setPage(name);
+        std::string onload = page->onload;
+        LOG_INFO << "page.onload = " << onload;
+        std::vector<std::string> commands;
+        boost::split(commands, onload, boost::is_any_of(";"));
+        for (int j = 0; j < commands.size(); j++) {
+            this->onCommand(commands[j]);
+        }
+        
+    }
+
+//draw various kinect and avatar skeleton and skeleton-related structures
+    void GuiKinController::drawKinSkelData(){
+        if(KC_flags[_KC_DISP_SKCLIP]) {
+            drawKinSkelClipBox(kinSkelDisp[SK_NSY_KIN][0],
+                               kinSkelDisp[SK_NSY_KIN][1],
+                               kinSkelDisp[SK_NSY_KIN][2]);
+        }
+        if((KC_flags[_KC_DISP_RAWSK]) || (KC_flags[_KC_DISP_FILTSK])) {
+            kinSkelJointState = kinHNDLR->getCtlSkelJointState();
+        }
+        if(KC_flags[_KC_DISP_AVTLOC]) {
+            drawKinSkelFrame(kinSkelDisp[SK_AVTR][0],kinSkelDisp[SK_AVTR][1],
+                             kinSkelDisp[SK_AVTR][2],SK_AVTR, avatarIKHandles);
+        }
+        if((KC_flags[_KC_DISP_RAWSK]) && (kinHNDLR->validCtlSkel())) {
+            drawKinSkelFrame(kinSkelDisp[SK_NSY_KIN][0],
+                             kinSkelDisp[SK_NSY_KIN][1],
+                             kinSkelDisp[SK_NSY_KIN][2],
+                             SK_NSY_KIN, kinSkelNoisyMarkers);
+        }
+        if((KC_flags[_KC_DISP_FILTSK]) && (kinHNDLR->validCtlSkel())){
+            drawKinSkelFrame(kinSkelDisp[SK_FLT_KIN][0],
+                             kinSkelDisp[SK_FLT_KIN][1],
+                             kinSkelDisp[SK_FLT_KIN][2],
+                             SK_FLT_KIN, kinSkelMarkerPos);
+        }
+    }//drawKinSkelData
+
+} // namespace gui

@@ -1,0 +1,577 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Sehoon Ha <sha9@gatech.edu>
+ * Georgia Tech Graphics Lab
+ */
+
+#include "cost.h"
+#include "common/app_cppcommon.h"
+#include "common/fullbody1.h"
+#include "rapidxml_helper.h"
+
+namespace controller {
+
+////////////////////////////////////////////////////////////
+// struct Cost::CostTerm implementation
+    Cost::CostTerm::CostTerm()
+        : v(NULL)
+        , v2(NULL)
+        , index0(-1)
+        , index1(-1)
+    {
+    }
+
+    bool Cost::CostTerm::isRanged() const {
+        if (v2 != NULL) {
+            const double CRITERIA = 0.1;
+            double dist = (*v - *v2).norm();
+            if (dist > CRITERIA) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::string Cost::CostTerm::TOSTR(const CostTermID& id) {
+        std::string tag("");
+        if (id == COST_TERM_COM) {
+            tag = "com";
+        } else if (id == COST_TERM_MAXCOM) {
+            tag = "maxcom";
+        } else if (id == COST_TERM_MINCOM) {
+            tag = "mincom";
+        } else if (id == COST_TERM_COMDOT) {
+            tag = "comdot";
+        } else if (id == COST_TERM_L) {
+            tag = "ang";
+        } else if (id == COST_TERM_CONSTRAINT_POSITION) {
+            tag = "cpos";
+        }
+        return tag;
+    }
+    
+    Cost::CostTerm* Cost::CostTerm::createCost(const Cost::CostTermID _id,
+                                               const Eigen::VectorXd& v0,
+                                               const Eigen::VectorXd& v1) {
+        Cost::CostTerm* t = new CostTerm();
+        t->name = Cost::CostTerm::TOSTR(_id);
+        t->v     = new Eigen::VectorXd();
+        *(t->v)  = v0;
+        t->v2     = new Eigen::VectorXd();
+        *(t->v2)  = v1;
+        // t->id = controller::Cost::COST_TERM_COM;
+        t->id = _id;
+        return t;
+    }
+
+    Cost::CostTerm* Cost::CostTerm::createCost(const Cost::CostTermID _id,
+                                               const Eigen::VectorXd& v0) {
+        Cost::CostTerm* t = new CostTerm();
+        t->name = Cost::CostTerm::TOSTR(_id);
+        t->v     = new Eigen::VectorXd();
+        *(t->v)  = v0;
+        t->v2     = NULL;
+        t->id = _id;
+        return t;
+    }
+    
+    Cost::CostTerm* Cost::CostTerm::createConstraintPosition(const Eigen::VectorXd& dir,
+                                                             int node0, int node1) {
+        Cost::CostTerm* t = new CostTerm();
+        t->name = "cpos";
+        t->v     = new Eigen::VectorXd();
+        *(t->v)  = dir;
+        t->v2     = NULL;
+        t->id = controller::Cost::COST_TERM_CONSTRAINT_POSITION;
+        t->index0 = node0;
+        t->index1 = node1;
+        return t;
+    }
+
+    
+// struct CostTerm ends
+////////////////////////////////////////////////////////////
+    
+
+    
+////////////////////////////////////////////////////////////
+// class Cost implementation
+    Cost::Cost() {
+    }
+    
+    Cost::~Cost() {
+        BOOST_FOREACH(CostTerm* t, terms) {
+            delete t;
+        }
+    }
+
+    void Cost::addTerm(CostTerm* rhs) {
+        BOOST_FOREACH(CostTerm*  lhs, terms) {
+            if (lhs->id == rhs->id) {
+                *(lhs->v)  = *(rhs->v);
+                if (rhs->v2) {
+                    if (lhs->v2 == NULL) lhs->v2 = new Eigen::VectorXd();
+                    *(lhs->v2) = *(rhs->v2);
+                }
+                return;
+            }
+        }
+        terms.push_back(rhs);
+    }
+
+
+    bool Cost::findTerm(const CostTermID& id,
+                        Eigen::Vector3d* v0, Eigen::Vector3d* v1) {
+        int DIM = 3; // I assumed this, not sure..
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            // cout << "compare: " << t->id << " " << id << endl;
+            if (t->id == id) {
+                (*v0) = (*(t->v));
+                if (t->v2) {
+                    (*v1) = (*(t->v2));
+                } else {
+                    (*v1) = Eigen::Vector3d::Zero(DIM);
+                }
+                return true;
+            }
+        }
+        (*v0) = Eigen::Vector3d::Zero(DIM);
+        (*v1) = Eigen::Vector3d::Zero(DIM);
+        return false;
+    }
+
+    Eigen::VectorXd Cost::valueOfLandingTerm(const CostTerm* const t) const {
+        using namespace fullbody1;
+        Eigen::Vector3d C = COM();
+        Eigen::Vector3d P = APOS(4, l_heel, l_toe, r_heel, r_toe);
+        Eigen::Vector3d PC = (P - C);
+        Eigen::Vector3d V  = COMdot();
+        // The second
+        double lhs = C(0) - P(0);
+        double rhs = -0.25 * V(0);
+        // cout << "compare " << lhs << " " << rhs << endl;
+        double dx = lhs - rhs;
+        double v = sqrt(dx * dx);
+
+        // // The first 
+        // cout << "PC' = " << IO(PC) << endl;
+        // PC(1) = PC(1) * 3.0;
+        // PC /= PC.norm();
+        // V /= V.norm();
+        // cout << "PC = " << IO(PC) << endl;
+        // cout << "V = " << IO(V) << endl;
+        // // If their direction is matched (dot product is 1), give it 0.
+        // // If not, (dot product is -1), give it MAX_PENALTY
+        // double dot = PC.dot(V);
+        // double lo = 1.0;
+        // double hi = -1.0;
+        // double w = (dot - lo) / (hi - lo);
+        // double v = sqrt(w);
+
+        // if (C(1) < 0.6) {
+        //     v += 0.5;
+        // }
+
+        return Eigen::Vector3d(v, 0.0, 0.0); // The final value will be squred
+
+        // // The second implementation
+        // Eigen::Vector3d C = COM();
+        // Eigen::Vector3d P = APOS(4, l_heel, l_toe, r_heel, r_toe);
+        // P(1) = 0.9;
+        // Eigen::Vector3d CP = (C - P);
+        // double v = CP.norm();
+        // return Eigen::Vector3d(sqrt(v) , 0.0, 0.0);
+    }
+
+    Eigen::VectorXd Cost::valueOfUprightTerm(const CostTerm* const t) const {
+        using namespace fullbody1;
+        Eigen::Vector3d A = POS(fullbody1::head);
+        Eigen::Vector3d B = POS(fullbody1::root);
+        Eigen::Vector3d AB = (A - B);
+        // if (AB(1) > 0) AB(1) = 0.0;
+        // cout << "AB = " << IO(AB) << endl; 
+        // double v = 2.0 * AB.norm();
+
+
+        AB /= AB.norm();
+        double ang = atan2(AB.y(), AB.x());
+        ang = ang / 3.141592 * 180.0;
+        double v = 100.0 * AB.z() * AB.z();
+        // if (ang < 0.0) ang += 360.0;
+        return Eigen::Vector3d(ang, v, 0.0);
+        // Eigen::Vector3d DIR = *(t->v);
+
+        // double dot = DIR.dot(BA);
+        // double lo = 1.0;
+        // double hi = -1.0;
+        // double w = (dot - lo) / (hi - lo);
+
+
+        // return Eigen::Vector3d(sqrt(w) , 0.0, 0.0); // The final value will be squred
+    }
+
+
+// Evaluation functions
+    Eigen::VectorXd Cost::valueOfTerm(const CostTerm* const t) const {
+        switch(t->id) {
+        case COST_TERM_COM:
+            return COM().cwiseProduct(Eigen::Vector3d(0.0, 1.0, 0.0));
+        case COST_TERM_MAXCOM:
+            return MAXCOM();
+        case COST_TERM_MINCOM:
+            return MINCOM();
+        case COST_TERM_COMDOT:
+            return COMdot();
+        case COST_TERM_L:
+            return L();
+        case COST_TERM_LANDING:
+            return valueOfLandingTerm(t);
+        case COST_TERM_UPRIGHT:
+            return valueOfUprightTerm(t);
+        case COST_TERM_BAR_DIST:
+            return (Eigen::VectorXd(3) << 2.0 * barDist(), 0, 0).finished();
+        default:
+            return Eigen::VectorXd::Zero( t->v->size() );
+        }
+    }
+
+    double Cost::valueOfConstraintPosition(const CostTerm* const t) const {
+        int node0 = t->index0;
+        int node1 = t->index1;
+        Eigen::VectorXd p0 = POS(node0);
+        Eigen::VectorXd p1 = POS(node1);
+        const Eigen::VectorXd& dir = *(t->v);
+        double v = (p0 - p1).dot(dir);
+
+        if (v < 0) {
+            return COST_PENALTY;
+        } else {
+            return 0.0;
+        }
+    }
+
+    double Cost::value() const {
+        // If not associated with simulation
+        if (conState() == NULL) {
+            return 0;
+        }
+        double sum = 0;
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            double SUM_WEIGHT = 1.0;
+            if (t->id == COST_TERM_COMDOT) {
+                SUM_WEIGHT *= 0.1;
+            }
+            if (t->id == COST_TERM_UPRIGHT) {
+                SUM_WEIGHT *= 0.001;
+            }
+            
+            if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                sum += SUM_WEIGHT * valueOfConstraintPosition(t);
+            } else {
+                Eigen::VectorXd curr = valueOfTerm(t);
+                sum += SUM_WEIGHT * (curr - *(t->v)).squaredNorm();
+            }
+        }
+        return sum;
+    }
+
+    double Cost::value(double task) const {
+        if (conState() == NULL) {
+            return 0;
+        }
+        double w = CONFINE(task, 0.0, 1.0);
+
+        double sum = 0;
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            double SUM_WEIGHT = 1.0;
+            if (t->id == COST_TERM_COMDOT) {
+                SUM_WEIGHT *= 0.1;
+            }
+            if (t->id == COST_TERM_UPRIGHT) {
+                SUM_WEIGHT *= 0.001;
+            }
+
+            // For constraints
+            if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                sum += w * valueOfConstraintPosition(t);
+            } else {
+                // If this is a regular objective term
+                Eigen::VectorXd curr = valueOfTerm(t);
+                if (t->v2 != NULL) {
+                    Eigen::VectorXd desired = (1 - w) * (*(t->v)) + w * (*(t->v2));
+                    sum += SUM_WEIGHT * (curr - desired).squaredNorm();
+                } else {
+                    sum += SUM_WEIGHT * (curr - *(t->v)).squaredNorm();
+                }
+            }
+        }
+        return sum;
+    }
+
+    bool Cost::isRanged() const {
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            if (t->isRanged()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    void Cost::evaluateTaskAndError(double* task, double* error) {
+        if (isRanged() == false) {
+            (*task) = 0.0;
+            (*error) = value(0.0);
+            return;
+        }
+        
+        double t = fibonacci_solve(0.0, 1.0, 20, 1e-7);
+        double e = value(t);
+
+        // double ww = CONFINE(t, 0.0, 1.0);
+
+        // BOOST_FOREACH(const CostTerm* const t, terms) {
+        //     Eigen::VectorXd curr = valueOfTerm(t);
+        //     Eigen::VectorXd desired;
+        //     if (t->v2 != NULL) {
+        //         desired = (1 - ww) * (*(t->v)) + ww * (*(t->v2));
+        //     } else {
+        //         desired = *(t->v);
+        //     }
+        //     // LOG_INFO << "curr = " << IO(curr) << " desired = " << IO(desired);
+        // }
+
+        (*task)  = t;
+        (*error) = e;
+    }
+
+// Auxiliary functions
+    std::string Cost::toString() const {
+        std::string str;
+        str += "[Cost ";
+        str += (boost::format("%.4lf") % value()).str();
+        str += " : ";
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            str += "{" + t->name;
+            if (conState()) {
+                if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                    str += "**";
+                    double temp_value = valueOfConstraintPosition(t);
+                    const double EPS = 0.00001;
+                    if (temp_value < EPS) {
+                        str += " OK ";
+                    } else {
+                        str += " NG ";
+                    }
+                } else {
+                    str += rtql8::toolkit::moreeigen::convertVectorXdToString( valueOfTerm(t) );
+                }
+            } else {
+                str += "----";
+            }
+            str += " :: ";
+
+            if (t->v) {
+                str += rtql8::toolkit::moreeigen::convertVectorXdToString(*(t->v));
+            }
+            if (t->v2 && t->isRanged()) {
+                str += rtql8::toolkit::moreeigen::convertVectorXdToString(*(t->v2));
+            }
+            if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                str += (boost::format(" [IDX = %d/%d]") % t->index0 % t->index1).str();
+            }
+            
+            str += "}";
+        }
+        str += "]";
+        return str;
+    }
+    
+// XML functions
+    Cost* Cost::readXML(rapidxml::xml_node<char>* node) {
+        namespace rx = rapidxml;
+        for (rx::xml_node<char> *child = node->first_node();
+             child; child = child->next_sibling()) {
+            std::string tag = rx::tag(child);
+            CostTerm* t = new CostTerm();
+            t->name = tag;
+            if (rx::has_attr(child, "value")) {
+                t->v     = new Eigen::VectorXd();
+                *(t->v)  = rx::attr_vx(child, "value");
+            }
+            if (rx::has_attr(child, "value2")) {
+                t->v2    = new Eigen::VectorXd();
+                *(t->v2) = rx::attr_vx(child, "value2");
+            }
+
+            if (tag == "com") {
+                t->id = COST_TERM_COM;
+            } else if (tag == "maxcom") {
+                t->id = COST_TERM_MAXCOM;
+            } else if (tag == "mincom") {
+                t->id = COST_TERM_MINCOM;
+            } else if (tag == "comdot") {
+                t->id = COST_TERM_COMDOT;
+            } else if (tag == "ang") {
+                t->id = COST_TERM_L;
+            } else if (tag == "landing") {
+                t->id = COST_TERM_LANDING;
+            } else if (tag == "upright") {
+                t->id = COST_TERM_UPRIGHT;
+            } else if (tag == "cpos") {
+                t->id = COST_TERM_CONSTRAINT_POSITION;
+                t->index0 = rx::attr_double(child, "index0");
+                t->index1 = rx::attr_double(child, "index1");
+            } else if (tag == "bardist") {
+                t->id = COST_TERM_BAR_DIST;
+            } else {
+                t->id = COST_TERM_NONE;
+            }
+
+            if (t->id == COST_TERM_NONE) {
+                LOG_FATAL << "cost doesn't have the tag: " << tag;
+                exit(1);
+            }
+            if (t->v == NULL) {
+                LOG_FATAL << "cost doesn't have the desired value";
+                exit(1);
+            }
+            terms.push_back(t);
+        }
+        return this;
+    }
+
+    rapidxml::xml_node<char>* Cost::writeXML(rapidxml::xml_document<char>* pdoc, bool hashMode) {
+        namespace rx = rapidxml;
+        rx::xml_node<char>* node = rx::alloc_node(pdoc, "evaluate");
+
+        BOOST_FOREACH(const CostTerm* const t, terms) {
+            std::string tag;
+            if (t->id == COST_TERM_COM) {
+                tag = "com";
+            } else if (t->id == COST_TERM_MAXCOM) {
+                tag = "maxcom";
+            } else if (t->id == COST_TERM_MINCOM) {
+                tag = "mincom";
+            } else if (t->id == COST_TERM_COMDOT) {
+                tag = "comdot";
+            } else if (t->id == COST_TERM_L) {
+                tag = "ang";
+            } else if (t->id == COST_TERM_LANDING) {
+                tag = "landing";
+            } else if (t->id == COST_TERM_UPRIGHT) {
+                tag = "upright";
+            } else if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                tag = "cpos";
+            } else if (t->id == COST_TERM_BAR_DIST) {
+                tag = "bardist";
+            } else {
+                LOG_FATAL << "invalid evaluation term";
+                exit(0);
+            }
+            rx::xml_node<char>* node_term = rx::add_node(pdoc, node, tag.c_str());
+            if (t->v) {
+                rx::add_attr(pdoc, node_term, "value", *(t->v));
+            }
+            if (t->v2) {
+                rx::add_attr(pdoc, node_term, "value2", *(t->v2));
+            }
+            if (t->id == COST_TERM_CONSTRAINT_POSITION) {
+                rx::add_attr(pdoc, node_term, "index0", t->index0);
+                rx::add_attr(pdoc, node_term, "index1", t->index1);
+            }
+
+        }
+        return node;
+    }
+
+
+// Optimization function
+
+    const static double Fib[47+1] = {
+        0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584,
+        4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229,
+        832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817,
+        39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733,
+        1134903170, 1836311903, INT_MAX};    
+
+    double Cost::fibonacci_solve(double lower,
+                                 double upper,
+                                 int n_fibo,
+                                 double tolerance)
+    {
+        // cout << FUNCTION_NAME() << " begins " << endl;
+        double ratio = Fib[n_fibo] / Fib[n_fibo + 1];
+        // order = {a, c, d, b}
+        double a = lower;
+        double b = upper;
+
+        double c = a + (1.0 - ratio) * (b - a);
+        double d = a + ratio * (b - a);
+
+        double value_c = value(c);
+        double value_d = value(d);
+
+        // cout << "a,c,d,b = " << a << " " << c << " " << d << " " << b << endl;
+
+        int loop_counter = 0;
+        --n_fibo;
+        while(n_fibo >= 0) {
+            // cout << "a,c,d,b = " << a << " " << c << " " << d << " " << b << " :: ";
+            // cout << "values = " << value_c << " " << value_d << endl;
+            if (fabs(value_c - value_d) < tolerance) {
+                break;
+            }
+            if (value_c < value_d) {
+                double a1 = a;
+                double b1 = d;
+
+                double ratio1 = Fib[n_fibo] / Fib[n_fibo + 1];
+                double c1 = a1 + (1.0 - ratio1) * (b1 - a1);
+                double d1 = c;
+                double value_c1 = value(c1);
+                double value_d1 = value_c;
+
+                // cout << "d1 = " << d1 << endl;
+                // cout << "d1_calc = " << a1 + ratio1 * (b1 - a1) << endl;
+
+                a = a1; b = b1; c = c1; d = d1;
+                value_c = value_c1; value_d = value_d1;
+
+            } else {
+                double a1 = c;
+                double b1 = b;
+
+                double ratio1 = Fib[n_fibo] / Fib[n_fibo + 1];
+                double c1 = d;
+                double d1 = a1 + ratio1 * (b1 - a1);
+                double value_c1 = value_d;
+                double value_d1 = value(d1);
+
+                // cout << "c1 = " << c1 << endl;
+                // cout << "c1_calc = " << a1 + (1.0 - ratio1) * (b1 - a1) << endl;
+
+                a = a1; b = b1; c = c1; d = d1;
+                value_c = value_c1; value_d = value_d1;
+
+            }
+            --n_fibo;
+            ++loop_counter;
+            // cout << prob->eval( 0.5 * (c + d) ) << endl;
+            // if (loop_counter > 3) break;
+        }
+        if (value_c < value_d) {
+            return c;
+        } else {
+            return d;
+        }
+    }
+
+// class Cost ends
+////////////////////////////////////////////////////////////
+    
+    
+} // namespace controller
+
+
+

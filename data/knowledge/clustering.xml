@@ -1,0 +1,52 @@
+<knowledge>
+  <simulation dt="0.000500" mu="1.000000" cfm="0.000000">
+    <ground filename="/skel/ground1.skel"/>
+    <character filename="/skel/fullbody5_sphere.skel">
+      <kp value="[0, 0, 0, 0, 0, 0, 600, 600, 400, 300, 200, 200, 600, 600, 400, 300, 200, 200, 600, 600, 400, 100, 100, 400, 200, 200, 100, 60, 400, 200, 200, 100, 60]"/>
+      <kd value="[0, 0, 0, 0, 0, 0, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 10.3923, 10.3923, 8.48526, 4.24264, 4.24264, 8.48526, 6, 6, 4.24264, 3.28634, 8.48526, 6, 6, 4.24264, 3.28634]"/>
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800, 700, 500, 300, 100]"/>
+    </character>
+  </simulation>
+  <primitives>
+    <controller name="legpose_d"/>
+    <controller name="legpose_a"/>
+    <controller name="armpose_a"/>
+    <controller name="vf_x"/>
+    <controller name="vf_y"/>
+    <controller name="joints_hips"/>
+    <controller name="joints_knees"/>
+    <controller name="joints_heels"/>
+    <controller name="joints_spine"/>
+    <controller name="feedbackjoints_heels"/>
+    <controller name="feedbackjoints_hips"/>
+    <controller name="stiffjoints_shoulders"/>
+    <controller name="stiffjoints_hips"/>
+  </primitives>
+  <composite name="lean" set_task="0.200000" select="1">
+    <initialpose target="[0.000605572, 0.885483, 3.50097e-005, -0.03776, 0.00589291, -0.000150154, 
+                         0.0412023, 0.0681573, -0.0564639, 0.0214411, 0.0252784, 
+                         -0.0440119, 0.0416135, -0.068565, 0.0234235, 0.0636389, 
+                         -0.0247785, -0.093339, 0.0237742, -0.188392, -0.0250964, 
+                         -0.12026, -0.0137751, -0.0568785, 0.283747, 0.262799, 2.25231, 0.161515, 0.056891, -0.284942, -0.263109, 2.25261, -0.161823]"/>
+    <!-- <initialtargetpose target="[0, 0.93, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161, -0.176696, 0.564289, 0.0417657, 1.44008, -0.0831683, 0.176696, -0.564289, -0.0417657, 1.44008, 0.0831683]"/> -->
+    <terminate>
+      <timeout to="0.612000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0.00, 0.85, 0]" value2="[0.00, 0.60, 0]"/>
+      <!-- <upright value="[90, 0, 0]" value2="[80, 0, 0]"/> -->
+    </evaluate>
+    <rig>
+      <!-- <controller name="legpose_d" regression="[-0.25981, -0.353226]"/> -->
+      <controller name="joints_knees" regression="[-0.25981, -0.353226]"/>
+    </rig>
+    <rig>
+      <controller name="joints_hips" regression="[0.0, 0.0]"/>
+    </rig>
+    <!-- <rig> -->
+    <!--   <controller name="joints_heels" regression="[0.0, 0.0]"/> -->
+    <!-- </rig> -->
+  </composite>
+</knowledge>
+
+

@@ -1,0 +1,102 @@
+<knowledge>
+  <simulation dt="0.0005" mu="1.0" cfm="0.0">
+    <ground filename="/skel/ground1.skel" />
+    <character filename="/skel/fullbody2.skel">
+      <!-- <kp value="[0, 0, 0, 0, 0, 0, 300, 300, 200, 100, 100, 100, 300, 300, 200, 100, 100, 100, 300, 300, 200, 50, 50, 200, 100, 100, 50, 30, 200, 100, 100, 50, 30]" /> -->
+      <!-- <kd value="[0, 0, 0, 0, 0, 0, 24.4949, 24.4949, 22.3607, 28.2843, 28.2843, 28.2843, 24.4949, 24.4949, 22.3607, 28.2843, 28.2843, 28.2843, 17.3205, 17.3205, 14.1421, 7.07107, 7.07107, 14.1421, 10, 10, 7.07107, 5.47723, 14.1421, 10, 10, 7.07107, 5.47723]" /> -->
+      <kp value="[0, 0, 0, 0, 0, 0, 450, 450, 300, 300, 150, 150, 450, 450, 300, 300, 150, 150, 450, 450, 300, 75, 75, 300, 150, 150, 75, 45, 300, 150, 150, 75, 45]" />
+      <kd value="[0, 0, 0, 0, 0, 0, 21.2132, 21.2132, 17.3205, 12.2474, 12.2474, 12.2474, 21.2132, 21.2132, 17.3205, 12.2474, 12.2474, 12.2474, 21.2132, 21.2132, 17.3205, 8.66025, 8.66025, 17.3205, 12.2474, 12.2474, 8.66025, 6.7082, 17.3205, 12.2474, 12.2474, 8.66025, 6.7082]" />
+
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800.00, 600.00, 500.00, 100.00, 100.00, 100.00, 800.00, 600.00, 500.00, 100.00, 100.00, 100.00, 1000.00, 2000.00, 1000.00, 500.00, 500.00, 800.00, 700.00, 500.00, 300.00, 100.00, 800.00, 700.00, 500.00, 300.00, 100.00]" />
+    </character>
+  </simulation>
+
+  <!-- potential rigs -->
+  <primitives>
+    <controller name="legpose_d" />
+    <controller name="legpose_a" />
+    <controller name="vf_x" />
+    <controller name="vf_y" />
+    <controller name="joints_heels" />
+    <controller name="feedbackjoints_heels" />
+    <controller name="feedbackjoints_hips" />
+  </primitives>
+
+  <composite name="lean" set_task="1.0">
+    <initialpose target="[0, 0.94, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" />
+    <terminate><timeout to="0.5" /> </terminate>
+    <evaluate>
+      <com value="[0.0, 0.8, 0.0]" value2="[0.0, 0.5, 0.0]"/> 
+      <cpos value="[1.0, 0.0, 0.0]" index0="0" index1="11" />
+    </evaluate>
+    <rig>
+      <controller name="legpose_d" regression="[-0.1, -0.6]"/>
+    </rig>
+    <rig>
+      <controller name="legpose_a" regression="[0.1, -0.1]"/>
+    </rig>
+    <rig>
+      <controller name="joints_heels" regression="[-0.0, -0.1]"/>
+    </rig>
+  </composite>
+
+  <composite name="thrust" set_task="1.0">
+    <initialpose target="[-0.141499, 0.547431, 0.000423521, -0.132871, -0.00311381, 7.06457e-005, 1.43836, 0.23622, -2.01838, 0.70691, -0.0332686, -0.0361078, 1.44183, -0.236224, -2.01635, 0.702752, 0.0312757, -0.0881642, 0.00145085, -0.698099, -0.000517553, -0.0722991, 0.000217173, -0.0508729, -0.0566477, -0.0228954, 0.0266529, -0.00406162, 0.0516814, 0.0558833, 0.0235047, 0.0262413, 0.00419729]" />
+    <terminate><timeout to="0.2" /> </terminate>
+    <evaluate>
+      <comdot value="[0.0, 1.0, 0.0]" value2="[0.0, 2.0, 0.0]"/>
+      <ang value="[0.0, 0.0, 0.0]" />
+    </evaluate>
+    <rig>
+      <!-- <controller name="vf_y" regression="[-0.01, 0.0]"/> -->
+      <controller name="vf_y" regression="[-0.39, -0.44]"/>
+    </rig>
+    <rig>
+      <controller name="vf_x" regression="[-0.45, 0.17]"/>
+    </rig>
+  </composite>
+
+  <composite name="airborne" set_task="0.0">
+    <initialpose target="[0, 0.84, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" />
+    <terminate><anycontacts /> </terminate>
+    <evaluate> </evaluate>
+    <rig>
+      <controller name="legpose_a" regression="[ 0.0, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="legpose_d" regression="[ 0.6, 0.0]"/>
+    </rig>
+  </composite>
+
+  <composite name="balance" set_task="0.0">
+    <initialpose target="[0, 0.84, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" />
+    <terminate><timeout to="1.0"/> </terminate>
+    <evaluate><comdot value="[0.0, 0.0, 0.0]" /> </evaluate>
+    <rig>
+      <controller name="feedbackjoints_heels" regression="[ -0.2, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="feedbackjoints_hips" regression="[ -0.5, 0.0]"/>
+    </rig>
+  </composite>
+
+
+  <composite name="jump" set_task="1.0" select="1">
+    <initialpose target="[0, 0.94, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" />
+    <phase>
+      <controller name="lean" regression="[1.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="thrust" regression="[0.6, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="airborne" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="balance" regression="[0.1, 0.8]"/>
+    </phase>
+    <evaluate><comdot value="[0.0, 1.5, 0.0]" /> </evaluate>
+  </composite>
+    
+  
+</knowledge>

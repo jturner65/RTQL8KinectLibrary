@@ -1,0 +1,320 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): John Turner <jturner65@gatech.edu>
+ * Georgia Tech Graphics Lab
+ * 
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine 
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights 
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow 
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "MyKinController.h"
+
+using namespace rtql8::kinect;
+
+
+namespace gui {
+
+    MyKinController::MyKinController() : KinectController(){}//cnstrctr
+
+    MyKinController::~MyKinController(){}//dstrctr
+
+///////
+//initializations
+///////
+
+//any initialization the IK skeleton/avatar may need after being loaded (set initial position/orientation)
+//return 0 for no error, 2 for error in initialization
+    int MyKinController::initIKSkel(){
+        int numD = kinSkel->getNumDofs();
+        Eigen::VectorXd q(numD);
+        //modify skeleton's initial position to face camera and stand a bit more naturally
+        kinSkel->getPose(q);
+        q[4] = -2.1;															//legs - slightly askew
+        q[9] = -0.17;
+        q[15]= -0.17;
+        kinSkel->setPose(q, true, true);
+        return 0;
+    }//initIKSkel
+
+//any initialization that any instance-specific data might need
+//return 0 for no error, 2 for error in initialization
+    int MyKinController::initKinData(){
+        //eventually control these flags via UI
+        KC_flags[_KC_DISP_DEPTH] = true;
+        KC_flags[_KC_DISP_RGB	] = true;
+        KC_flags[_KC_DISP_AVATAR] = true;
+        KC_flags[_KC_DISP_MRKRS] = true;
+        KC_flags[_KC_DISP_AVTLOC] = true;
+        KC_flags[_KC_DISP_RAWSK] = true;
+        KC_flags[_KC_DISP_FILTSK] = true;
+        KC_flags[_KC_DISP_SKCLIP] = true;
+        return 0;
+    }//initIKSkel
+
+
+//build demo UI components - instantiate via base class call, initialize values/customize here
+void MyKinController::buildUI(vector<int>& numCmps){
+	KinectController::buildUI(numCmps);																	//needs to be first! instantiates objects
+
+	//DEMO STUFF : 
+	string butLblNames[] = {"Move","Rotate", "Flex", "LGrip ", "RGrip ", "", ""};
+	string sldLblNames[] = {"Angle", "Amount", "Speed","",""};									//labels for demo UI elements
+	string crnkLblNames[] = {"Deg 1","Deg 2", "", ""};
+
+	string butMONames[] = {"Move Button","Rotate Button", "Flex Button", "Left Grip ", "Right Grip ","",""};
+	string sldMONames[] = {"Angle Slider", "Amount Slider", "Speed Slider","",""};				//labels for demo UI elements
+	string crnkMONames[] = {"Angle Crank 1","Angle Crank 2","",""};
+
+	//starting values for buttons - upper left location, width, height, spacer
+	int bx = 0, by = 0, bw = 200, bh = 100, bs = 70;
+	if(numCmps.size() > 0){
+		for(int i = 0; i < numCmps[0]; ++i){			//buttons
+			KinUIBtn[i]->setLoc(bx,by);
+			KinUIBtn[i]->setDim(bw,bh);
+			KinUIBtn[i]->setColor(.65f,.65f,.65f,1);
+			if(i<numCmps[0]-2){	KinUIBtn[i]->setColor((i == 0) || (i == 3)? 1 : 0, (i == 1) || (i == 3) || (i == 4)? 1 : 0, (i == 2) || (i == 4) ? 1 : 0 ,1);}
+			KinUIBtn[i]->setLabel(butLblNames[i]);
+			KinUIBtn[i]->setMSOverTxt(butMONames[i]);
+			KinUIBtn[i]->setHotSpot(3*bx/3.9f,3*(bx+bw)/3.9f,3*by/3.9f,3*(by+bh)/3.9f);
+			cout<<"i = "<<i<<" : hspot box ("<<KinUIBtn[i]->hsXL<<","<<KinUIBtn[i]->hsXH<<","<<KinUIBtn[i]->hsYL<<","<<KinUIBtn[i]->hsYH<<")"<<endl;
+			bx += (bw + bs);
+		}
+
+	//starting values for sliders :		//_srmg : range of slider values
+	//_sp : 0-1 position along slider -> 0 at top or left, 1 at bottom or right (based on orientation) mult by srng to get value of slider
+	//# of subdivisions of slider for discrete values - <= 0 means "continuous"
+	//dimensions of sliderbar track (where slider thumb moves)
+	//orientation of slider - true is horizontal, false is vertical
+
+	float _srng = 100, _sp = .3f;
+	//starting values for sliders - upper left location, width, height, spacer
+	bx = 0, by = bh + bs, bw = 100, bh = 85, bs = 50;		
+	int _sdv = 0, _slen = 400, _sthick = 50;
+	if(numCmps.size() > 1){
+		for(int i = 0; i < numCmps[1];  ++i){
+			KinUISldr[i]->setLoc(bx,by);
+			KinUISldr[i]->setDim(bw,bh);
+			KinUISldr[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+			KinUISldr[i]->setLabel(sldLblNames[i]);
+			KinUISldr[i]->setMSOverTxt(sldMONames[i]);
+			KinUISldr[i]->setSlideVals(_srng,_sp * (i+1),_sdv,_slen,_sthick);
+			KinUISldr[i]->setIsHoriz((i != numCmps[1]-1 ? true : false));				//make last one vertical
+			KinUISldr[i]->setHotSpot(3*bx/3.9f,3*(bx+bw)/3.9f,3*by/3.9f,3*(by+bh)/3.9f);
+			by += (bh + bs);
+		}
+
+	_srng = 100, _sp = .3f;
+	//starting values for cranks - upper left location, width, height, spacer
+	bx = 100, by = 400, bw = 100, bh = 70, bs = 80;		
+	int _sdv = 0, _slen = 250, _sthick = 20;	
+
+	if(numCmps.size() > 2){
+		for(int i = 0; i < numCmps[2];  ++i){
+			KinUICrnk[i]->setLoc(bx,by);
+			KinUICrnk[i]->setDim(bw,bh);
+			KinUICrnk[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+			KinUICrnk[i]->setLabel(crnkLblNames[i]);
+			KinUICrnk[i]->setMSOverTxt(crnkMONames[i]);
+			KinUICrnk[i]->setSlideVals(_srng,_sp * (i+1),_sdv,_slen,_sthick);
+			KinUICrnk[i]->setIsHoriz((i != numCmps[1]-1 ? true : false));				//make last one vertical
+			KinUICrnk[i]->setHotSpot(3*bx/3.9f,3*(bx+bw)/3.9f,3*by/3.9f,3*(by+bh)/3.9f);
+			by += (bh + bs);
+		}
+	}}}//checking size of vector holding number of components
+	cout<<"Num buttons : "<<KinUIBtn.size()<<endl;
+	cout<<"Num sliders : "<<KinUISldr.size()<<endl;
+	cout<<"Num cranks : "<<KinUICrnk.size()<<endl;
+	cout<<"Num total : "<<KinUICmp.size()<<endl;
+	for(int i = 0; i<KinUICmp.size(); ++i){
+		cout<<"obj : "<<i<<" xL : "<<KinUICmp[i]->hsXL<<" xH : "<<KinUICmp[i]->hsXH<<" yL : "<<KinUICmp[i]->hsYL<<" yHS : "<<KinUICmp[i]->hsYH<<endl;
+	}
+}//buildUI
+
+//will set the display of the grip/click info buttons so that they reflect what each hand is doing - 0 is nothing, 1 is click, 2 is grab
+//these buttons are currently idx 3 and 4 in KinUIBtn vector
+    void MyKinController::setDispButtons(int Lstate, int Rstate){
+        string lHandButAra[3] = {"LHand", "LClick", "LGrip "};
+        string rHandButAra[3] = {"RHand", "RClick", "RGrip "};
+        KinUIBtn[3]->setLabel(lHandButAra[Lstate]);
+        KinUIBtn[3]->setClicked(Lstate != 0);
+        KinUIBtn[4]->setLabel(rHandButAra[Rstate]);
+        KinUIBtn[4]->setClicked(Rstate != 0);
+    }//setDispButtons
+
+///////
+//call these from timer loop
+//////
+//debug info for gui display
+    void MyKinController::onTimerQuery(){
+        if(kinHNDLR->kinSkelHandlerAvail()){
+            //skelJointStrs =  kinHNDLR->getAvtrBoneLenVecStrs(); 
+            //skelJointStrs =  kinHNDLR->getJointAngleStrs();
+            skelJointStrs =  kinHNDLR->getBestKinSkelJointLocsStrs();
+            kinSpeechRecog = kinHNDLR->getSpchRecogResult();
+            //UI->UpdateKinSkelAngles(skelJointStrs, kinSpeechRecog);					//communicate with ui here
+        }//if valid skel handler
+    }//onTimerQuery
+
+///////
+///call these from draw
+///////
+
+    void MyKinController::onDrawUpdate(rtql8::renderer::RenderInterface* mRI){
+        glPushMatrix();
+        glTranslatef(0,0,-3);
+        if(nullptr != kinSkel){
+            //cout<<"skel ! null"<<endl;
+            glPolygonMode(GL_FRONT_AND_BACK,  GL_LINE);									//line around polys, only for skeleton
+            if(KC_flags[_KC_DISP_AVATAR]){kinSkel->draw(mRI);}
+            if(KC_flags[_KC_DISP_MRKRS]){kinSkel->drawMarkers(mRI);}
+        }
+        skelDrawn = true;
+        glPopMatrix();
+        onDrawUpdate();
+    }//onDrawUpdate
+
+//display IK skeleton and various kinect-derived information and images
+    void MyKinController::onDrawUpdate(){
+        onTimerQuery();																//update ui info
+        //kinect stuff drawn here 
+        if(kinHNDLR->kinValid()) {
+            glPushMatrix();
+            kinectRConnTimer = 90;
+            glTranslatef(0,-1,-3);
+            if(KC_flags[_KC_DISP_DEPTH]){												//if we want depth image display
+                glPolygonMode(GL_FRONT_AND_BACK,  GL_FILL);								//fills polys,  necessary for images to display
+                glPushMatrix();			
+                glTranslatef(-4,4,0);
+                drawKinDpthHandImage(true);				//left hand depth segmentation
+                glPopMatrix();
+
+                glPushMatrix();			
+                glTranslatef(4,4,0);
+                drawKinDpthHandImage(false);			//right hand depth segmentation
+                glPopMatrix();
+
+                glPushMatrix();			
+                glTranslatef(0,0,5.5f);
+                glScalef(.8f,.8f,1);
+                drawKinImage(true);						//draw depth image
+                glPopMatrix();
+
+            }//if using depth image
+            if(KC_flags[_KC_DISP_RGB]){													//if we want RGB image display
+                glPolygonMode(GL_FRONT_AND_BACK,  GL_FILL);								//fills polys,  necessary for images to display
+                glPushMatrix();
+                glTranslatef(0,5,1);
+                glScalef(.2f,.2f,1);
+                drawKinImage(false);					//draw rgb image
+                glPopMatrix();
+            }//if using rgb image
+            if(KC_flags[_KC_USE_STRM_SKEL]){											//if we want IK on kinect skeleton
+                glPushMatrix();
+                glTranslatef(0,1,0);
+                if(kinHNDLR->kinSkelHandlerAvail()){	drawKinSkelData();			}							//base-class available draw function
+                glPopMatrix();
+            }//if using skel stream/IK
+            glPopMatrix();
+        }//if kinect connected
+        else if (0 >= kinectRConnTimer) {//attempt to reconnect to kinect if not valid/present
+            //cout<<"kin is invalid (onDrawUpdate)"<<endl;
+            kinHNDLR->checkKinectConn();
+            kinectRConnTimer = 90;
+        }//if kin valid else
+        else{	--kinectRConnTimer;}
+
+        //draw skeleton visualisations
+        if((nullptr != kinSkel) && (!skelDrawn)){
+            if(KC_flags[_KC_DISP_AVATAR]){kinSkel->draw();}
+            if(KC_flags[_KC_DISP_MRKRS]){kinSkel->drawMarkers();}
+        }
+        KinectController::onDrawUpdate();
+		//cout<<"winx"<<winX<<endl;
+        drawUI();		//draw last to overlay ui
+        skelDrawn = false;
+    }//onDrawUpdate
+		//draw these programmatically
+		//check through all ui elements	for click, grab or mouseover
+	bool MyKinController::checkUIElements(float x, float y, float d, int hand, int evnt){
+		bool clickedOn = false;
+		//idx 5 for left button, 6 for right button
+		if(d >= 0){						//depth negative means being called manually by mouse click				
+			stringstream lbl;
+			lbl<<(hand ? "L:(" : "R:(");
+			lbl<<(int)x;
+			lbl<<", ";
+			lbl<<(int)y;
+			lbl<<", ";
+			lbl<<(int)d;
+			lbl<<", ";
+			lbl<<evnt;
+			lbl<<")";
+			KinUICmp[(6 - hand)]->setLabel(lbl.str());
+		}//sets ui objects that show hand locations and push progress values
+		//call base class version to handle actual object events
+		KinectController::checkUIElements(x, y, d, hand, evnt);
+
+		return clickedOn;
+	}
+
+		//draw all UI components
+	void MyKinController::drawUI(){
+		KinectController::drawUI();
+	}//drawUI
+//draw various kinect and avatar skeleton and skeleton-related structures
+    void MyKinController::drawKinSkelData(){
+        if(KC_flags[_KC_DISP_SKCLIP]){	
+            glPushMatrix();
+            glTranslatef(kinSkelDisp[SK_NSY_KIN][0],kinSkelDisp[SK_NSY_KIN][1],kinSkelDisp[SK_NSY_KIN][2]);
+            drawKinSkelClipBox();
+            glPopMatrix();
+        }
+        if((KC_flags[_KC_DISP_RAWSK]) || (KC_flags[_KC_DISP_FILTSK])){	kinSkelJointState = kinHNDLR->getCtlSkelJointState(); }		//if displaying either filtered or raw skeleton data, then get joint state info
+        if(KC_flags[_KC_DISP_AVTLOC]){		
+            glPushMatrix();
+            glTranslatef(kinSkelDisp[SK_AVTR][0],kinSkelDisp[SK_AVTR][1],kinSkelDisp[SK_AVTR][2]);
+            drawKinSkelFrame(SK_AVTR, avatarIKHandles);
+            glPopMatrix();
+        }
+        if((KC_flags[_KC_DISP_RAWSK]) && (kinHNDLR->validCtlSkel())){	
+            glPushMatrix();
+            glTranslatef(kinSkelDisp[SK_NSY_KIN][0],kinSkelDisp[SK_NSY_KIN][1],kinSkelDisp[SK_NSY_KIN][2]);
+            drawKinSkelFrame(SK_NSY_KIN, kinSkelNoisyMarkers);
+            glPopMatrix();
+        }
+        if((KC_flags[_KC_DISP_FILTSK]) && (kinHNDLR->validCtlSkel())){		
+            glPushMatrix();
+            glTranslatef(kinSkelDisp[SK_FLT_KIN][0],kinSkelDisp[SK_FLT_KIN][1],kinSkelDisp[SK_FLT_KIN][2]);
+            drawKinSkelFrame(SK_FLT_KIN, kinSkelMarkerPos);
+            glPopMatrix();
+        }
+    }//drawKinSkelData
+
+} // namespace gui

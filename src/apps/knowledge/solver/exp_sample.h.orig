@@ -1,0 +1,62 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Sehoon Ha <sha9@gatech.edu>
+ * Georgia Tech Graphics Lab
+ */
+
+#ifndef SOLVER_EXP_SAMPLE_H
+#define SOLVER_EXP_SAMPLE_H
+
+#include <string>
+#include <vector>
+#include <Eigen/Dense>
+
+#include "common/app_hppcommon.h"
+
+namespace rtql8 {
+    namespace toolkit {
+        struct SimState;
+    } // namespace toolkit
+} // namespace rtql8
+
+namespace controller {
+    class AppCompositeController;
+    class Knowledge;
+} // namespace controller
+
+namespace solver {
+    class RemoteDB;
+} // namespace solver
+
+namespace solver {
+    
+    struct ExpSample {
+        std::string current;
+        std::string nextrig;
+        std::vector<std::string> dimensions;
+        int numDims() { return dimensions.size(); }
+        Eigen::VectorXd params;
+
+        std::string final;
+        rtql8::toolkit::SimState* finalState;
+        double value;
+
+        int dbid;
+
+        ExpSample(controller::AppCompositeController* con);
+        ExpSample(controller::AppCompositeController* con, std::string _next);
+
+        void evaluate(controller::Knowledge* kn);
+        bool isEvaluated();
+
+        void evaluateDB(controller::Knowledge* kn, RemoteDB* db);
+        bool isEvaluatedDB(controller::Knowledge* kn, RemoteDB* db);
+
+        virtual std::string toString() const;
+    }; // struct ExpSample
+    
+} // namespace solver
+
+#endif // #ifndef SOLVER_EXP_SAMPLE_H
+

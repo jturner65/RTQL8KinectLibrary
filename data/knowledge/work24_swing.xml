@@ -1,0 +1,135 @@
+<knowledge>
+  <simulation dt="0.000500" mu="1.000000" cfm="0.000000">
+    <bar pos="[0, 2, 0]" threshold="0.060000"/>
+    <ground filename="/skel/ground3_gap.skel"/>
+    <character filename="/skel/fullbody5_sphere.skel">
+      <kp value="[0, 0, 0, 0, 0, 0, 600, 600, 400, 300, 200, 200, 600, 600, 400, 300, 200, 200, 600, 600, 400, 100, 100, 400, 200, 200, 100, 60, 400, 200, 200, 100, 60]"/>
+      <kd value="[0, 0, 0, 0, 0, 0, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 10.3923, 10.3923, 8.48526, 4.24264, 4.24264, 8.48526, 6, 6, 4.24264, 3.28634, 8.48526, 6, 6, 4.24264, 3.28634]"/>
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800, 700, 500, 300, 100]"/>
+    </character>
+  </simulation>
+  <primitives>
+    <controller name="legpose_d"/>
+    <controller name="legpose_a"/>
+    <controller name="armpose_a"/>
+    <controller name="vf_x"/>
+    <controller name="vf_y"/>
+    <controller name="joints_hips"/>
+    <controller name="joints_knees"/>
+    <controller name="joints_heels"/>
+    <controller name="joints_spine"/>
+    <controller name="feedbackjoints_heels"/>
+    <controller name="feedbackjoints_hips"/>
+    <controller name="stiffjoints_shoulders"/>
+    <controller name="stiffjoints_hips"/>
+  </primitives>
+  <composite name="arch" set_task="0.000000" select="1">
+    <initialpose target="[-0.1, 1.09, 0, 0, 0, 0, 0.21961, 0.26717, -0.442445, 0.222836, -0.12661, -0.0321234, 0.21961, -0.26717, -0.442445, 0.222836, 0.12661, -0.0321234, 0.00937393, 0.257034, -0.00379163, 0.147693, 0.00693766, -0.0543932, 1.31982, 2.79163, -0.976034, 0.15071, 0.0543932, -1.31982, -2.79163, -0.976034, -0.15071]"/>
+    <terminate>
+      <!-- <timeout to="0.520000"/> -->
+      <highest />
+    </terminate>
+    <rig>
+      <controller name="armpose_a" regression="[0.8, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_hips" regression="[-0.69, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_knees" regression="[-0.39305, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_spine" regression="[0.39305, 0.0]"/>
+    </rig>
+
+    <evaluate/>
+  </composite>
+
+  <composite name="hallow" set_task="0.000000" select="1">
+    <initialpose target="[-0.1, 1.09, 0, 0, 0, 0, 0.21961, 0.26717, -0.442445, 0.222836, -0.12661, -0.0321234, 0.21961, -0.26717, -0.442445, 0.222836, 0.12661, -0.0321234, 0.00937393, 0.257034, -0.00379163, 0.147693, 0.00693766, -0.0543932, 1.31982, 2.79163, -0.976034, 0.15071, 0.0543932, -1.31982, -2.79163, -0.976034, -0.15071]"/>
+    <terminate>
+      <!-- <timeout to="0.980000"/> -->
+      <highest />
+    </terminate>
+    <rig>
+      <controller name="armpose_a" regression="[0.0, -1.2]"/>
+    </rig>
+    <rig>
+      <!-- <controller name="joints_hips" regression="[0.59305, 0.0]"/> -->
+      <controller name="joints_hips" regression="[0.59, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_knees" regression="[0.0, 0.39]"/>
+    </rig>
+    <rig>
+      <controller name="joints_spine" regression="[0.0, -0.39305]"/>
+    </rig>
+
+    <evaluate/>
+  </composite>
+
+  <composite name="drop" set_task="0.000000">
+    <initialpose target="[-1.2, 0.885483, 3.50097e-005, -0.12776, 0.00189291, -0.000150154, 0.0412023, 0.0681573, 0.0264639, 0.0614411, 0.0252784, -0.0440119, 0.0416135, -0.068565, 0.0234235, 0.0636389, -0.0247785, -0.093339, 0.0237742, -0.488392, -0.0250964, -0.12026, -0.0137751, -0.0568785, 0.283747, 0.262799, 2.25231, 0.161515, 0.056891, -0.284942, -0.263109, 2.25261, -0.161823]"/>
+
+    <terminate>
+      <anycontacts/>
+    </terminate>
+    <evaluate/>
+    <rig>
+      <controller name="armpose_a" regression="[-0.998669, 0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_spine" regression="[0.58669, 0]"/>
+    </rig>
+    <rig>
+      <!-- <controller name="legpose_a" regression="[-0.24669, 0]"/> -->
+      <controller name="legpose_a" regression="[-0.48669, 0]"/>
+    </rig>
+  </composite>
+
+  <composite name="sequence" set_task="0.000000" select="1">
+    <initialpose target="[-0.4, 1.19, 0, -0.4, 0, 0, 0.021961, 0.26717, -0.442445, 0.222836, -0.12661, -0.0321234, 0.021961, -0.26717, -0.442445, 0.222836, 0.12661, -0.0321234, 0.00937393, 0.257034, 0.0, 0.147693, 0.00693766, -0.0543932, 1.31982, 2.79163, -0.976034, 0.15071, 0.0543932, -1.31982, -2.79163, -0.976034, -0.15071]"/>
+    <terminate>
+      <timeout to="0.580000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0.0, 0.0, 0.0]" />
+    </evaluate>
+
+    <phase>
+      <controller name="hallow" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="arch" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="hallow" regression="[1.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="arch" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="hallow" regression="[1.0, 0.0]"/>
+    </phase>
+
+    <!-- <phase> -->
+    <!--   <controller name="arch" regression="[1.0, 0.0]"/> -->
+    <!-- </phase> -->
+
+
+    <!-- <phase> -->
+    <!--   <controller name="hallow" regression="[0.0, 0.0]"/> -->
+    <!-- </phase> -->
+    <!-- <phase> -->
+    <!--   <controller name="arch" regression="[1.0, 0.0]"/> -->
+    <!-- </phase> -->
+    <!-- <phase> -->
+    <!--   <controller name="drop" regression="[0.0, 0.0]"/> -->
+    <!-- </phase> -->
+
+  </composite>
+
+
+</knowledge>
+
+

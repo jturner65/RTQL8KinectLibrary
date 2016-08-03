@@ -1,0 +1,550 @@
+#include "application.h"
+#include "dynamics/BodyNodeDynamics.h"
+#include "dynamics/SkeletonDynamics.h"
+#include "renderer/OpenGLRenderInterface.h"
+#include "utils/Paths.h"
+#include "utils/UtilsRotation.h"
+#include "toolkit/Toolkit.h"
+#include "common/app_cppcommon.h"
+#include "common/render_cppcommon.h"
+#include "common/fullbody1.h"
+
+#include "mpiclient/mpiclient"
+
+// #include "controller/controller"
+// #include "controller/SimPack.h"
+
+#include "controller/knowledge.h"
+#include "controller/simpack.h"
+#include "controller/app_composite_controller.h"
+#include "controller/rapidxml_helper.h"
+
+#include "operation/interpreter.h"
+// #include "operation/op_controller.h"
+#include "solver/solver.h"
+#include "solver/problem.h"
+// #include "interpreter.h"
+#include "GuiKinController.h"
+#include "motion.h"
+#include "utils/Timer.h"
+
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/support/date_time.hpp>
+
+namespace gui {
+
+    Application::Application()
+        : MEMBER_INIT_NULL(ri)
+          // , MEMBER_INIT_NULL(simpack)
+          // , MEMBER_INIT_NULL(interpreter)
+        , MEMBER_INIT_NULL(kn)
+          // , MEMBER_INIT_NULL(sim)
+          // , MEMBER_INIT_NULL(replay)
+          // , MEMBER_INIT_NULL(con)
+        , MEMBER_INIT_NULL(kinect)
+    {
+
+        namespace logging = boost::log;
+        namespace src = boost::log::sources;
+        namespace expr = boost::log::expressions;
+        namespace keywords = boost::log::keywords;
+        logging::add_file_log
+            (
+                keywords::file_name = "log_gui.txt",
+                keywords::format = "[%TimeStamp%]: %Message%"
+                
+                );
+        logging::add_common_attributes();
+
+        logging::add_console_log(cout,
+                                 keywords::format =
+                                 (
+                                     expr::stream
+                                     << "[" << expr::format_date_time< boost::posix_time::ptime >(
+                                         "TimeStamp", "%Y-%m-%d %H:%M:%S.%f") << "]"
+                                     << "<" << logging::trivial::severity
+                                     << "> : " << expr::smessage
+                                     )
+            );
+
+
+        isSimTerminated = false;
+        useMotionArrays = false;
+    }
+    
+    Application::~Application() {
+        MEMBER_RELEASE_PTR(kinect);
+        // MEMBER_RELEASE_PTR(interpreter);
+        // MEMBER_RELEASE_PTR(con);
+        // MEMBER_RELEASE_PTR(replay);
+        // MEMBER_RELEASE_PTR(simpack);
+        MEMBER_RELEASE_PTR(ri);
+    }
+
+    void Application::init(int window_width, int window_height) {
+        namespace rx = rapidxml;
+        std::string knowledge_filename("");
+        try {
+            rx::file<char> file(RTQL8_DATA_PATH"/gui.xml");
+            rx::xml_document<char> doc;
+            doc.parse<0>(file.data());
+
+            rx::xml_node<char>* root = doc.first_node("gui");
+
+            // Parse knowledge file
+            knowledge_filename
+                = std::string(RTQL8_DATA_PATH)
+                + root->first_node("knowledge")->value();
+            LOG_INFO << "knowledge_filename = " << knowledge_filename;
+            // Parse motion array
+            useMotionArrays = rx::attr_bool(root->first_node("motionarrays"), "use");
+            LOG_INFO << "useMotionArrays = " << useMotionArrays;
+
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR << FUNCTION_NAME() << " : error = " << e.what() << endl;
+            exit(0);
+        }
+
+
+        set_kn( new controller::Knowledge() );
+        bool result = kn()->loadXML(knowledge_filename.c_str());
+        // bool result = kn()->loadXML(RTQL8_DATA_PATH"/knowledge/output.xml");
+
+        LOG_INFO << endl << kn()->toString();
+        LOG_INFO << "result = " << result;
+        kn()->simpack()->reset();
+        LOG_INFO << "reset OK";
+
+        // kn()->saveXML(RTQL8_DATA_PATH"/knowledge/output.xml");
+        // exit(0);
+
+        set_ri( new rtql8::renderer::OpenGLRenderInterface() );
+        LOG_INFO << "create rendering interface OK";
+
+        set_replay( new rtql8::toolkit::SimReplay(sim()->getSimConfig()) );
+        replay()->frames.push_back( sim()->getSimState() );
+        LOG_INFO << "create replay structure OK";
+
+        const int SKEL_INDEX = 1;
+        std::string skel_filename = sim()->getSimConfig().skels[SKEL_INDEX].filename;
+        Motion::initSkeleton( skel_filename.c_str() );
+        
+        LOG_INFO << FUNCTION_NAME() << " OK";
+
+
+
+#ifdef KN_USE_KINECT
+        LOG_INFO << "start to initialize Kinect";
+        GuiKinController* kin = new GuiKinController(this);
+        LOG_INFO << "Kinect allocated";
+        int kinInitRetVal = kin->onInit();
+        LOG_INFO << "Kinect initialized = " << kinInitRetVal;
+        kin->initWinVals(ri(), window_width, window_height);
+        LOG_INFO << "Kinect variable set";
+        // vector<int> tmpVecButs = vector<int>(3);				//idx 0 is btns, 1(if present) is sldrs, 2(if present) is crank controls
+        // tmpVecButs[0] = 5; tmpVecButs[1] = 3; tmpVecButs[2] = 1;
+        // kin->buildUI(tmpVecButs);
+        LOG_INFO << "Kinect buildUI";
+        set_kinect( kin );
+        LOG_INFO << "Kinect initialization OK";
+#else
+        LOG_INFO << "Kinect is not initialized due to the compile option";
+#endif
+
+#ifdef KN_COMPILE_SOLVER
+        set_solver( new solver::Solver(kn()) );
+        LOG_INFO << "Solver initialization OK";
+#else
+        LOG_INFO << "Solver is not initialzed due to the compile option";
+#endif
+        
+    }
+
+    void Application::reset() {
+        simpack()->reset();
+        replay()->frames.clear();
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::reset(double target) {
+        con()->setParamsWithTask(target);
+        simpack()->reset();
+        replay()->frames.clear();
+        isSimTerminated = false;
+        LOG_INFO << FUNCTION_NAME() << " : " << target << " OK";
+    }
+
+    
+    bool Application::step() {
+        if (isSimTerminated) {
+            // con()->control();
+            con()->controlWithSPDOnly();
+            sim()->step();
+            return true;
+        }
+
+        bool result = simpack()->step();
+        replay()->frames.push_back( sim()->getSimState() );
+
+
+        if (!result) {
+            LOG_INFO << "controller = " << con()->toString();
+            LOG_INFO << "evaluate = " << con()->evaluate(0.5);
+            // LOG_INFO << "final = " << sim()->getSimState();
+            double task  = 0.0;
+            double error = 0.0;
+            con()->evaluateTaskAndError(&task, &error);
+            LOG_INFO << "task & error = " << task << " " << error;
+            isSimTerminated = true;
+        }
+
+        return result;
+    }
+    
+    void Application::render() {
+        renderAxis();
+        // Render skeleton
+        for (int i = 0; i < sim()->nSkels(); i++) {
+            sim()->skel(i)->draw(ri());
+        }
+
+        // Render motions
+        Motion::globalStep(motions);
+        for (int i = 0; i < motions.size(); i++) {
+            Motion& motion = motions[i];
+            if (motion.packed() == false) {
+                continue;
+            }
+            motion.step();
+            motion.render(ri());
+        }
+        
+        // Render the local frame
+        {
+            using namespace fullbody1;
+            using namespace rtql8::dynamics;
+            using namespace rtql8::utils::rotation;
+            BodyNodeDynamics* node = dynamic_cast<
+                BodyNodeDynamics*>(sim()->skel(1)->getNode(0));
+            Eigen::Vector3d p = node->getWorldCOM();
+
+            const Eigen::VectorXd& q = sim()->getSimState().skels[1].q;
+            Eigen::Vector3d em = q.segment<3>(3);
+            Eigen::Quaterniond quat = expToQuat(em);
+            Eigen::Matrix3d R = quatToMatrix(quat);
+            Eigen::Vector3d euler = matrixToEuler(R, XZY);
+            double yRot = euler(2);
+            Eigen::Matrix3d M = eulerToMatrixY(yRot);
+            Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+            T.topLeftCorner<3, 3>() = M;
+
+            glBlock() {
+                rtql8::toolkit::glTranslated(p);
+                rtql8::toolkit::glMultMatrixd(T);
+                rtql8::toolkit::glScaled(0.05);
+                renderAxis();
+            }
+
+        }
+
+        // Render contact forces
+        {
+            glPushAttrib(GL_LINE_BIT);
+            rtql8::toolkit::glColorRGB(255, 105, 180);
+            glLineWidth(1.0);
+            const Eigen::VectorXd &contacts = sim()->getSimState().contacts;
+
+            for (int i = 0; i < sim()->getSimState().nT(); i++) {
+                using rtql8::toolkit::glVertex3d;
+
+                Eigen::Vector3d p = contacts.segment<3>(i * 6 + 0);
+                Eigen::Vector3d f = contacts.segment<3>(i * 6 + 3);
+                ::glBegin(GL_LINES);
+                glVertex3d(p);
+                glVertex3d(p - 0.01 * f);
+                ::glEnd();
+
+                glBlock() {
+                    rtql8::toolkit::glTranslated(p);
+                    glutSolidSphere(0.05, 10, 10);
+                
+                }
+            }
+            glPopAttrib();
+        }
+
+        // Render the center of mass
+        {
+            const Eigen::Vector3d& COM = sim()->getSimState().skels[1].COM;
+            glBlock() {
+                rtql8::toolkit::glTranslated(COM);
+                rtql8::toolkit::glColorRGB(160, 30, 240);
+                glutSolidSphere(0.1, 4, 2);
+            }
+        }
+        // Render the center of mass
+        {
+            using namespace fullbody1;
+            const Eigen::Vector3d& COP = con()->APOS(2, l_toe, r_toe);
+            glBlock() {
+                rtql8::toolkit::glTranslated(COP);
+                rtql8::toolkit::glColorRGB(160, 30, 240);
+                glutSolidSphere(0.1, 4, 2);
+            }
+        }
+
+#ifdef KN_USE_KINECT
+        if (kinect()) {
+            glBlock() {
+                glDisable(GL_LIGHTING);
+                kinect()->onDrawUpdate(ri());
+                glEnable(GL_LIGHTING);
+            }
+        }        
+#endif
+    }
+
+    bool Application::interpret(const char* const instruction) {
+        bool runopt = false;
+        operation::Interpreter interpreter(kn());
+        bool ret = interpreter.parse(instruction, &runopt);
+        if (std::string(instruction) == "optimize") {
+            ret = true;
+            runopt = true;
+        }
+        // bool ret = true;
+
+#ifdef KN_COMPILE_SOLVER
+        if (runopt && solver()) {
+            solver::Problem* p = new solver::Problem();
+            solver()->setProblem(p);
+            LOG_INFO << "Optimization Problem Placed!!!!!";
+        }
+#endif
+        clearMotionArrays();
+        return ret;
+    }
+
+    bool Application::interpret(boost::format& instruction) {
+        return interpret(instruction.str().c_str());
+    }
+
+    
+    int Application::replayNumFrames() {
+        return replay()->frames.size();
+    }
+
+    void Application::replayUpdateToFrame(int idx) {
+        if (idx < 0 || replayNumFrames() <= idx) {
+            LOG_WARNING << FUNCTION_NAME() << " : invalid index = " << idx;
+            return;
+        }
+        sim()->setSimState( replay()->frames[idx] );
+    }
+
+    void Application::perturb() {
+        using namespace fullbody1;
+        using namespace rtql8::dynamics;
+        BodyNodeDynamics* node = dynamic_cast<
+            BodyNodeDynamics*>(sim()->skel(1)->getNode(head));
+        Eigen::Vector3d p(0, 0, 0);
+        Eigen::Vector3d f(-2000, 0, 0);
+        node->addExtForce(p, f);
+
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::set_solver_type(int evaluatorType) {
+#ifdef KN_COMPILE_SOLVER
+        solver()->set_evaluatorType(evaluatorType);
+        solver()->setEvaluator();
+        LOG_INFO << FUNCTION_NAME() << " OK";
+#endif
+    }
+
+    void Application::solver_run(int evaluatorType) {
+#ifdef KN_COMPILE_SOLVER
+        solver()->set_evaluatorType(evaluatorType);
+        solver()->setEvaluator();
+        solver()->run();
+#endif
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::solver_stop() {
+#ifdef KN_COMPILE_SOLVER
+        solver()->stop();
+#endif
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::down() {
+        // leg()->down();
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::up() {
+        // leg()->up();
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+    void Application::saveController(const char* const filename) {
+        kn()->saveXML(filename);
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+    
+    void Application::loadController(const char* const filename) {
+        LOG_INFO << "deleting the current knowledge...";
+        delete kn();
+        set_kn( new controller::Knowledge() );
+        LOG_INFO << "loading the new knowledge...";
+        bool result = kn()->loadXML(filename);
+        LOG_INFO << "result = " << result;
+        LOG_INFO << "xmldoc = " << kn()->xmldoc();
+        kn()->simpack()->reset();
+        LOG_INFO << "reset OK";
+#ifdef KN_COMPILE_SOLVER
+        solver()->set_kn( kn() );
+        LOG_INFO << "set a new knowledge to the solver";
+#endif
+        
+        clearMotionArrays();
+        kn()->pushHint("clear");
+    }
+
+    double Application::getTaskParam() {
+        return con()->getTaskParam();
+    }
+
+    void Application::setControllerParams(const Eigen::VectorXd& params) {
+        // if (con()->dim() != params.size()) {
+        //     int lhs = con()->dim();
+        //     int rhs = params.size();
+        //     LOG_WARNING << FUNCTION_NAME() << " : invalid dim. " << lhs << ", " << rhs;
+        //     return;
+        // }
+        // con()->set_params(params);
+        LOG_INFO << FUNCTION_NAME() << " OK : params = " << IO(params);
+    }
+
+    void Application::optimize() {
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+
+    void Application::test() {
+
+        LOG_INFO << FUNCTION_NAME() << " OK";
+    }
+
+// Mouse event functions
+    bool Application::click(int button, int state, int x, int y) {
+	//button : left : 0, middle : 1, right : 2
+	//state : down : 0, up : 1
+#ifdef KN_USE_KINECT
+        if (kinect()) {
+<<<<<<< local
+            int dpth = 0;               //need this to passbyref
+            bool retVal = kinect()->checkUIElements(x, y, dpth, true, button, 1 - state);
+            //TODO : modify mouse location based on if x,y has changed here
+            return retVal;
+=======
+            int d = 0;
+            return kinect()->checkUIElements(x, y, d, true, button, 1 - state);
+>>>>>>> other
+        }
+#endif
+        return false;
+    }
+
+    bool Application::drag(int x, int y) {
+#ifdef KN_USE_KINECT
+        if (kinect()) {
+<<<<<<< local
+            int dpth = 0;               //need this to passbyref
+            bool retVal = kinect()->checkUIElements(x, y, dpth, true, 0, 2);
+            //TODO : modify mouse location based on if x,y has changed here
+            return retVal;
+=======
+            int d = 0;
+            return kinect()->checkUIElements(x, y, d, true, 0, 2);
+>>>>>>> other
+        }
+#endif
+        return false;
+    }
+// Motion related functions
+    void Application::clearMotionArrays() {
+        motions.clear();
+    }
+
+    bool Application::onSimulationTerminated() {
+        if (!useMotionArrays) {
+            return false;
+        }
+        int n = motions.size();
+        if (n > 0) {
+            Motion& motion = motions[n - 1];
+            if (motion.packed() == false) {
+                motion.pack();
+            }
+        }
+
+        if (n >= 3) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    void Application::onSimulationBegin() {
+        if (!useMotionArrays) {
+            return;
+        }
+        int n = motions.size();
+
+        double task = 0.0;
+        Eigen::Vector3d offset(0.0, 0.0, -2.0);
+        switch(n) {
+        case 0: task = 0.2; offset(0) = -2.0; break;
+        case 1: task = 0.5; offset(0) =  0.0; break;
+        case 2: task = 0.8; offset(0) =  2.0; break;
+        }
+        Motion m(replay());
+        m.set_offset( offset );
+        motions.push_back(m);
+        con()->setParamsWithTask( task );
+        LOG_INFO << FUNCTION_NAME() << " task = " << task;
+
+    }
+
+    bool Application::autostart() {
+#ifdef KN_COMPILE_SOLVER
+        if (solver() && solver()->prob() != NULL) {
+            return false;
+        }
+#endif
+        return (useMotionArrays) && (motions.size() == 0);
+    }
+
+    controller::SimPack* Application::simpack() {
+        return kn()->simpack();
+    }
+
+    rtql8::toolkit::Simulator* Application::sim() {
+        return simpack()->sim();
+    }
+
+    controller::AppCompositeController* Application::con() {
+        return simpack()->con();
+    }
+
+    
+} // namespace gui

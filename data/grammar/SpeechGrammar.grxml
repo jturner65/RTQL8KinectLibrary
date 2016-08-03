@@ -1,0 +1,115 @@
+﻿<grammar version="1.0" xml:lang="en-US" root="rootRule" tag-format="semantics/1.0-literals" xmlns="http://www.w3.org/2001/06/grammar">
+  <rule id="rootRule" scope="public">
+    <one-of>
+      <item><tag>IK MODE</tag><one-of><item> parkour eye kay</item><item> pah koor eye kay</item><item> agent eye kay</item><item> coach eye kay</item><item> kinect eye kay</item></one-of></item>
+      <item><tag>UI MODE</tag><one-of><item> parkour you eye</item><item> pah koor you eye</item><item> agent you eye</item><item> coach you eye</item><item> kinect you eye</item></one-of></item>
+      <item><tag>3D MODE</tag><one-of><item> parkour three dee</item><item> pah koor three dee</item><item> agent three dee</item><item> coach three dee</item><item> kinect three dee</item></one-of></item>
+      <item><tag>GRAB MODE ON</tag><one-of><item> parkour grab yes</item><item> pah koor grab yes</item><item> agent grab yes</item><item> coach grab yes</item><item> kinect grab yes</item></one-of></item>
+      <item><tag>GRAB MODE OFF</tag><one-of><item> parkour grab no</item><item> pah koor grab no</item><item> agent grab no</item><item> coach grab no</item><item> kinect grab no</item></one-of></item>
+	  <item><tag>LEARN GRIP</tag><one-of><item> depth learn grab</item><item> agent learn grab</item><item> coach learn grab</item><item> kinect learn grab</item></one-of></item>
+	  <item><tag>TRAIN GRIP</tag><one-of><item> depth train grab</item><item> agent train grab</item><item> coach train grab</item><item> kinect train grab</item></one-of></item>
+	  <item><tag>TEST GRIP</tag><one-of><item> depth test grab</item><item> agent test grab</item><item> coach test grab</item><item> kinect test grab</item></one-of></item>
+	  <item><tag>UPDATE GRIP</tag><one-of><item> depth update grab</item><item> agent update grab</item><item> coach update grab</item><item> kinect update grab</item></one-of></item>	  
+	  <item><tag>TOGGLE NNET</tag><one-of><item> depth toggle net</item><item> agent toggle net</item><item> coach toggle net</item><item> kinect toggle net</item></one-of></item>
+    </one-of>
+  </rule>
+  <rule id="primeRule" scope="public">
+    <one-of>
+      <item><tag>LOWER</tag><one-of><item> lower </item><item> lower your </item></one-of></item>
+      <item><tag>RAISE</tag><one-of><item> raise </item><item> raise your </item></one-of></item>
+      <item><tag>ADD</tag><one-of><item> add </item><item> increase </item></one-of> </item>      
+      <item><tag>DIVIDE</tag><one-of><item> divide </item></one-of></item>
+      <item><tag>UPDATE</tag><one-of><item> update </item></one-of></item>      
+      <item><tag>TERMINATE</tag><one-of><item> terminate </item><item> stop </item><item> halt </item></one-of></item>     
+      <item><tag>MOVE</tag><one-of><item> move </item><item> move your </item></one-of></item>     
+      <item><tag>ROTATE</tag><one-of><item> rotate </item><item> turn </item><item> rotate your </item><item> turn your </item></one-of></item>     
+      <item><tag>FLEX</tag><one-of><item> flex </item><item> bend </item><item> flex your </item><item> bend your </item></one-of></item>      
+      <item><tag>EXTEND</tag><one-of><item> extend </item><item> straighten </item><item> extend your </item><item> straighten your </item></one-of></item>       
+      <item><tag>PUSH</tag><one-of><item> push </item><item> shove </item><item> push the </item><item> shove the </item></one-of></item>
+      <item><tag>PULL</tag><one-of><item> pull </item><item> pull the </item></one-of></item>   
+      <item><tag>STIFFEN</tag><one-of><item> stiffen </item></one-of></item>
+      <item><tag>RELAX</tag><one-of><item> relax </item><item> relax your </item></one-of></item>   
+      <item><tag>SPEEDUP</tag><one-of><item> faster </item><item> speedup </item><item> speed up </item></one-of></item>
+      <item><tag>SLOWDOWN</tag><one-of><item> slower </item><item> slowdown </item><item> slow down </item></one-of></item>
+    </one-of>
+  </rule>
+
+  <rule id="scndryRule" scope="public">
+    <one-of>
+      <item><tag>IN</tag><one-of><item> in </item><item> into </item><item> during </item></one-of></item>
+      <item><tag>BY</tag><one-of><item> by </item></one-of></item>
+      <item><tag>ABOUT</tag><one-of><item> about </item><item> around </item></one-of></item>
+      <item><tag>WHEN</tag><one-of><item> when </item></one-of></item>
+      <item><tag>ON</tag><one-of><item> on </item><item> against </item><item> at </item><item> to </item></one-of> </item>
+    </one-of>
+  </rule>
+
+  <rule id="dirRule" scope="public">
+    <one-of>
+      <item><tag>UP</tag><one-of><item> up </item><item> upper </item><item> north </item></one-of></item>
+      <item><tag>DOWN</tag><one-of><item> down </item><item> lower </item><item> south </item></one-of></item>
+      <item><tag>LEFT</tag><one-of><item> left </item><item> west </item></one-of></item>
+      <item><tag>RIGHT</tag><one-of><item> right </item><item> east </item></one-of></item>
+      <item><tag>CENTER</tag><one-of><item> center</item><item> middle </item></one-of></item>
+      <item><tag>LIKE THIS</tag><one-of><item> like this </item><item> like </item></one-of></item>     
+    </one-of>
+  </rule>
+
+  <rule id="amtRule" scope="public">
+      <item><tag>MORE</tag><one-of><item> more </item><item> greater </item><item> harder </item></one-of></item>
+      <item><tag>LESS</tag><one-of><item> less </item><item> lesser </item><item> softer </item></one-of></item>    
+  </rule>  
+  
+  <rule id="bodypartRule" scope="public">
+    <one-of>
+       <item><tag>ROOT</tag><one-of><item>root</item><item>center of mass</item><item>pelvis</item></one-of></item>
+       <item><tag>SPINE</tag><one-of><item>pelvis</item></one-of></item>
+       <item><tag>SHOULDER</tag><one-of><item>shoulder</item></one-of></item>
+       <item><tag>HEAD</tag><one-of><item>head</item></one-of></item>
+       <item><tag>NECK</tag><one-of><item>neck</item></one-of></item>
+       <item><tag>ELBOW</tag><one-of><item>elbow</item></one-of></item>
+       <item><tag>WRIST</tag><one-of><item>wrist</item></one-of></item>
+       <item><tag>HAND</tag><one-of><item>hand</item></one-of></item>
+       <item><tag>HIP</tag><one-of><item>hip</item></one-of></item>
+       <item><tag>THIGH</tag><one-of><item>thigh</item></one-of></item>
+       <item><tag>KNEE</tag><one-of><item>knee</item></one-of></item>
+       <item><tag>SHIN</tag><one-of><item>shin</item></one-of></item>
+       <item><tag>ANKLE</tag><one-of><item>ankle</item></one-of></item>
+       <item><tag>FOOT</tag><one-of><item>foot</item></one-of></item>
+       <item><tag>FOREARM</tag><one-of><item>forearm</item></one-of></item>
+       <item><tag>BICEP</tag><one-of><item>bicep</item></one-of></item>
+    </one-of>
+  </rule>
+
+  <rule id="operationRule" scope="public">
+    <one-of><item>divide <ruleref uri="#phaseRule"/> into  <ruleref uri="#numberRule"/> <ruleref uri="#phaseRule"/></item></one-of>
+  </rule>  
+  
+  <rule id="phaseRule" scope="public">
+    <one-of>
+      <item><tag></tag></item>      
+    </one-of>
+  </rule>
+  
+  <rule id="predicateRule" scope="public">
+    <one-of>
+      <item><tag></tag></item>      
+    </one-of>   
+  </rule>
+  
+  <rule id="numberRule" scope="public">
+    <one-of>
+      <item><tag>1</tag><one-of><item>one</item><item>a</item><item>an</item></one-of></item>    
+      <item><tag>2</tag><one-of><item>two</item></one-of></item> 
+      <item><tag>3</tag><one-of><item>three</item></one-of></item> 
+      <item><tag>4</tag><one-of><item>four</item></one-of></item> 
+      <item><tag>5</tag><one-of><item>five</item></one-of></item> 
+      <item><tag>6</tag><one-of><item>six</item></one-of></item> 
+      <item><tag>7</tag><one-of><item>seven</item></one-of></item> 
+      <item><tag>8</tag><one-of><item>eight</item></one-of></item> 
+      <item><tag>9</tag><one-of><item>nine</item></one-of></item> 
+      <item><tag>10</tag><one-of><item>ten</item></one-of></item> 
+    </one-of>   
+  </rule>
+  
+</grammar>

@@ -1,0 +1,47 @@
+<knowledge>
+        <simulation dt="0.000500" mu="1.000000" cfm="0.000000">
+                <ground filename="/skel/ground1.skel"/>
+                <character filename="/skel/fullbody2.skel">
+                        <kp value="[0, 0, 0, 0, 0, 0, 300, 300, 200, 100, 100, 100, 300, 300, 200, 100, 100, 100, 300, 300, 200, 50, 50, 200, 100, 100, 50, 30, 200, 100, 100, 50, 3
+0]"/>
+                        <kd value="[0, 0, 0, 0, 0, 0, 24.4949, 24.4949, 22.3607, 28.2843, 28.2843, 28.2843, 24.4949, 24.4949, 22.3607, 28.2843, 28.2843, 28.2843, 17.3205, 17.3205,
+14.1421, 7.07107, 7.07107, 14.1421, 10, 10, 7.07107, 5.47723, 14.1421, 10, 10, 7.07107, 5.47723]"/>
+                        <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800,
+ 700, 500, 300, 100]"/>
+                </character>
+        </simulation>
+        <primitives>
+                <controller name="legpose_d"/>
+                <controller name="legpose_a"/>
+                <controller name="vf_x"/>
+                <controller name="vf_y"/>
+                <controller name="joints_hips"/>
+                <controller name="joints_knees"/>
+        </primitives>
+        <composite name="lean" set_task="1.000000">
+                <initialpose target="[0, 0.97, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]"/>
+                <terminate>
+                        <timeout to="0.500000"/>
+                </terminate>
+                <evaluate>
+                        <com value="[0, 0.8, 0]" value2="[0, 0.5, 0]"/>
+                        <cpos value="[-1, 0, 0]" index0="0.000000" index1="11.000000"/>
+                </evaluate>
+                <rig>
+                        <controller name="joints_hips" regression="[0, 0.404]"/>
+                </rig>
+                <rig>
+                        <controller name="joints_knees" regression="[0.05, -0.637]"/>
+                </rig>
+        </composite>
+        <composite name="thrust" set_task="0.000000" select="1">
+                <initialpose target="[0, 0.97, 0, 0, 0, 0, 0.2, 0.1, -0.5, 0.3, 0, 0, 0.2, -0.1, -0.5, 0.3, 0, 0, 0, -0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]"/>
+                <terminate>
+                        <timeout to="0.200000"/>
+                </terminate>
+                <evaluate/>
+                <prev>
+                        <controller name="lean" regression="[0.3, 0.3]"/>
+                </prev>
+        </composite>
+</knowledge>

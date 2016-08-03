@@ -1,0 +1,144 @@
+<!--do not edit unless core kinect library is being changed.  please make a custom configuration file for implementation -->
+<constants cmt="global or stream level constants">
+	<params name="_RCD" val="600" 			
+			type="int" cmt="reconnect retry countdown timer"/> 
+	<params name="kinMaxTilt" val="27" 	
+			type="long" cmt=" max tilt angle"/> 
+	<params name="kinMinTilt" val="-27" 	
+			type="long" cmt=" min tilt angle"/> 
+	<params name="GrammarFilePath" val="WRTQL8_DATA_PATH" 
+			type="#def'ed" cmt="string path to data directory where we will find grammar file names"/>
+	<params name="GramarFileNameStr" val="grammar/SpeechGrammar.grxml"	
+			type="string" cmt="file name for speech recognition grammar"/>	
+	<params name="gripH" val="0.75" 
+			type="float" cmt=" threshold plane for grip detection - height"/> 
+	<params name="gripW" val="0.75"  
+			type="float" cmt=" threshold plane for grip detection - width"/> 
+	<params name="gripD" val="1.05"  
+			type="float" cmt=" threshold plane for grip detection - depth"/> 
+	<params name="LHandBx" val="" x="70" y="-65" z="100" w="-95"	
+			type="int[4]" cmt="ara of vals for left hand detect box : {max x, min x-max x, max y, min y-max y}"/>
+	<params name="RHandBx" val="" x="70" y="-65" z="100" w="-95"	
+			type="int[4]" cmt="ara of vals for right hand detect box : {max x, min x-max x, max y, min y-max y}"/>	
+	<params name="skelSmoothing" val="" a="0.5" b="0.1" c=".5" d="0.1" e="0.1"	
+			type="struct NUI_TRANSFORM_SMOOTH_PARAMETERS" cmt="used for kinect sdks internal calc of skeleton motion smoothing - see sdk for params" />
+	<params name="MX_CNT_FLR_Y" val="30"										
+			type="int" cmt="max number of consecutive frames of same floor depth counted (if kinects interpolated floor changes, decrement until 0 then change, to act as smoothing)"/>
+	<params name="SK_JNT_MULT" val="" x="1.0" y="1.0" z="-1.0"					
+			type="float[3]" cmt="multiplier used when converting joint coords from skel space to display space"/>
+	<params name="SK_JNT_OFF" val="" x="0.0" y="0.0" z="1.0f"					
+			type="float[3]" cmt="offset used when converting joint coords from skel space to display space"/>
+	<params name="jntSz" val="" x=".02" y=".02" z=".02"						
+			type="double[3]" cmt="size of skel joint ara for display"/>
+	<params name="jntPosAraDpth" val="4" 			
+			type="int" cmt="how many previous values for jnt pos,vel,accel we will keep around"/>
+	<params name="jntNumMaxInterp" val="10"			
+			type="int" cmt="maximum interpolations before we just use most recent avatar value for joint ara location"/>
+	<params name="TRY_KIN_RCN" val="1000000"   
+			type="int" cmt="kinect controller reconnect retry countdown"/> 
+	<params name="KC_hndEps_2D" val="1"  		
+			type="int" cmt="threshold amount hands need to move in xy to be detected as moving"/> 
+	<params name="KinPshDist" val="100"   		
+			type="float" cmt=" arbitrary; defines delta z to be considered push"/> 
+	<params name="kinSkelDisp" val="" nx="1.0" ny="0.0" nz="0.0" fx="1.0" fy="2.0" fz="0.0" ax="-1.0" ay="0.0" az="0.0f"					
+			type="float[3][3]" cmt="translation on screen for drawing raw kinect joint ara data noisy kin, filtered kin, avatar(postIK)"/>
+	<params name="HndTrkBxMult" val="" lx="0" ly=".5" lz="0" hx="3" hy="1.5" hz="3"	
+			type="float[6]" cmt="translation on screen for drawing raw kinect joint ara data noisy kin, filtered kin, avatar(postIK)"/>
+	<params name="KinIK_eps" val=".001"			
+			type="float" cmt="IK eps amt" />	
+	<params name="KinIK_minPrtrb" val=".01"		
+			type="float" cmt="minimum timestep amount we will allow for any single iteration" />
+	<params name="KinIK_numIters" val="5"			
+			type="int" cmt="number of IK iterations to run per timer cycle" />
+	<params name="KinIK_weights" val="" w_jIdx_HipC="1"	w_jIdx_Spine="1" w_jIdx_ShldrC="1" w_jIdx_Head="1" w_jIdx_ShldrL="1" w_jIdx_ElbowL="1" w_jIdx_WristL="1" w_jIdx_HandL="1" w_jIdx_ShldrR="1"	w_jIdx_ElbowR="1"	
+			w_jIdx_WristR="1" w_jIdx_HandR="1" w_jIdx_HipL="1" w_jIdx_KneeL="1" w_jIdx_AnkleL="1" w_jIdx_FootL="1" w_jIdx_HipR="1" w_jIdx_KneeR="1" w_jIdx_AnkleR="1" w_jIdx_FootR="1"		
+			type="Eigen::VectorXd" cmt="weights for joints in IK skel, idx'ed by kin joint ara idx - currently 20 joints in kin skel"/>		
+	<params name="KinSldrBrdr" val="5"  		
+			type="float" cmt="graphical border around slider object"/> 
+	<params name="UIobj_DragSens" val=".7"   	
+			type="float" cmt="sensitivity of slider bar drag - 0.0-1.0"/> 	
+	<params name="UIobj_CrankSens" val=".02"   	
+			type="float" cmt="sensitivity of crank bar drag - 0.0-1.0"/> 
+	<params name="LHandDragSens" val="10"   	
+			type="float" cmt="left hand sensitivity setting for when dragging"/> 
+	<params name="RHandDragSens" val="10"   	
+			type="float" cmt="right hand sensitivity setting for when dragging"/> 			
+	<params name="LHandPushSensIn" val="0.3"  
+			type="float"  cmt="left hand push in sensitivity to detect click"/>
+	<params name="RHandPushSensIn" val="0.3"  
+			type="float"  cmt="left hand push in sensitivity to detect click"/>
+	<params name="LHandPushSensOut" val="0.3"  
+			type="float"  cmt="right hand pull back sensitivity to disengage click"/>
+	<params name="RHandPushSensOut" val="0.3"  
+			type="float"  cmt="right hand pull back sensitivity to disengage click"/>
+	<params name="UIobj_MinFontScale" val="0.01"  
+			type="float"  cmt="min value for font scaling for ui object labels"/>
+	<params name="UIobj_MaxFontScale" val="0.3"  
+			type="float"  cmt="max value for font scaling for ui object labels"/>
+</constants>
+
+<stateControl cmt="initial settings of state machines for all streams">
+	<handler name="KinectHandler"></handler>
+	<handler name="KinAudioHandler"></handler>	
+	<handler name="KinDepthHandler"></handler>	
+	<handler name="KinImageHandler"></handler>	
+	<handler name="KinInteractHandler"></handler>
+	<handler name="KinSkelHandler"></handler>
+	
+	<handler name="KinectController">
+		<params type="flag" idx="_KC_USE_STRM_DPTH" val="1" 										
+			cmt="use data from a particular stream - depth"/>
+		<params type="flag" idx="_KC_USE_STRM_RGB" val="1" 										
+			cmt="use data from a particular stream - RGB image"/>
+		<params type="flag" idx="_KC_USE_STRM_SKEL" val="1" 									
+			cmt="use data from a particular stream - skeleton (for IK)"/>
+		<params type="flag" idx="_KC_USE_STRM_AUD" val="1" 									
+			cmt="use data from a particular stream - audio"/>
+		<params type="flag" idx="_KC_USE_STRM_INTR" val="1" 									
+			cmt="use data from a particular stream - interaction (gripping hands)"/>
+		<params type="flag" idx="_KC_DISP_DEPTH" val="0" 		
+			cmt="display depth image"/>
+	    <params type="flag" idx="_KC_DISP_RGB" val="1" 		
+			cmt="display rgb image"/>
+        <params type="flag" idx="_KC_DISP_AVATAR" val="1" 		
+			cmt="display avatar model in draw window"/>
+        <params type="flag" idx="_KC_DISP_MRKRS" val="1" 		
+			cmt="display marker locations on avatar skeleton in draw window"/>
+        <params type="flag" idx="_KC_DISP_AVTLOC" val="1" 		
+			cmt="display avatar post-IK joint locs"/>
+        <params type="flag" idx="_KC_DISP_RAWSK" val="1" 		
+			cmt="display raw skeleton joints and bones from kinect skeleton stream"/>
+        <params type="flag" idx="_KC_DISP_FILTSK" val="1" 		
+			cmt="display filtered skeleton joints and bones from kinect skeleton stream"/>
+        <params type="flag" idx="_KC_DISP_SKCLIP" val="1" 		
+			cmt="display skel stream clipping box"/>
+        <params type="flag" idx="_KC_DISP_UI_2D" val="1" 		
+			cmt="display 2d UI overlay"/>
+        <params type="flag" idx="_KC_DISP_UI_3D" val="0" 		
+			cmt="display 3d UI overlay - not supported currently"/>
+        <params type="flag" idx="_KC_DISP_UI_IK" val="1" 		
+			cmt="display UI overlay in IK mode"/>
+		<params type="flag" idx="_KC_PROC_2D_DGRAB" val="1" 									
+			cmt="process/display 2d hands grab functionality built in depth handler"/>
+		<params type="flag" idx="_KC_PROC_HANDS_2D" val="1" 									
+			cmt="process/display 2d hands to interact with gui layer"/>
+		<params type="flag" idx="_KC_PROC_HANDS_3D" val="0" 								
+			cmt="process/display 3d hands to interact with skel/scene objs"/>
+		<params type="flag" idx="_KC_PROC_IK" val="0" 									
+			cmt="process IK - want to turn off when we are using hands, freezing coach skel"/>
+			
+		<params type="speech"  tag="IK MODE" idx="_KC_PROC_IK" val="1" 
+			cmt="grammar val from speech recog to switch to IK mode" />
+		<params type="speech"  tag="UI MODE" idx="_KC_PROC_HANDS_2D" val="1"
+			cmt="grammar val from speech recog to switch to IK mode" />
+		<params type="speech"  tag="3D MODE" idx="_KC_PROC_HANDS_3D" val="1"
+			cmt="grammar val from speech recog to switch to IK mode" />
+		<params type="speech"  tag="GRAB MODE ON" idx="_KC_PROC_2D_DGRAB" val="1"
+			cmt="grammar val from speech recog to turn on hand grabbing in 2d" />
+		<params type="speech"  tag="GRAB MODE OFF" idx="_KC_PROC_2D_DGRAB" val="0"
+			cmt="grammar val from speech recog to turn off hand grabbing in 2d" />
+	</handler>
+	
+	<handler name="KinectUIComponent"></handler>
+</stateControl>
+

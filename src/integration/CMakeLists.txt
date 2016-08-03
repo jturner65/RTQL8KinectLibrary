@@ -1,0 +1,15 @@
+###############################################
+# integration
+PROJECT(integration)
+
+# Search all header and source files
+FILE(GLOB integration_srcs "*.cpp")
+FILE(GLOB integration_hdrs "*.h")
+
+# Library 
+ADD_LIBRARY(integration ${integration_srcs} ${integration_hdrs})
+SET_TARGET_PROPERTIES(integration PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+SET_TARGET_PROPERTIES(integration PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+INSTALL(FILES ${integration_hdrs} DESTINATION include/rtql8/integration)
+INSTALL(TARGETS integration DESTINATION lib)

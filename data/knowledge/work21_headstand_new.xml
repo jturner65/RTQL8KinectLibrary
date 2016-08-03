@@ -1,0 +1,225 @@
+<knowledge>
+  <simulation dt="0.000500" mu="1.000000" cfm="0.000000" maxmove="0.160000" collisionRefreshRate="10">
+    <ground filename="/skel/ground1.skel"/>
+    <character filename="/skel/fullbody3_longarm.skel">
+      <kp value="[0, 0, 0, 0, 0, 0, 600, 600, 400, 200, 200, 200, 600, 600, 400, 200, 200, 200, 600, 600, 400, 100, 100, 400, 200, 200, 100, 60, 400, 200, 200, 100, 60]"/>
+      <kd value="[0, 0, 0, 0, 0, 0, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 14.6969, 14.6969, 13.4164, 16.9706, 16.9706, 16.9706, 10.3923, 10.3923, 8.48526, 4.24264, 4.24264, 8.48526, 6, 6, 4.24264, 3.28634, 8.48526, 6, 6, 4.24264, 3.28634]"/>
+      <torquelimit value="[0, 0, 0, 0, 0, 0, 800, 600, 500, 100, 100, 100, 800, 600, 500, 100, 100, 100, 1000, 2000, 1000, 500, 500, 800, 700, 500, 300, 100, 800, 700, 500, 300, 100]"/>
+    </character>
+  </simulation>
+  <primitives>
+    <controller name="legpose_d"/>
+    <controller name="legpose_a"/>
+    <controller name="legpose_s"/>
+    <controller name="armpose_a"/>
+    <controller name="vf_x"/>
+    <controller name="vf_y"/>
+    <controller name="joints_hips"/>
+    <controller name="joints_knees"/>
+    <controller name="joints_heels"/>
+    <controller name="feedbackjoints_heels"/>
+    <controller name="feedbackjoints_hips"/>
+    <controller name="stiffjoints_shoulders"/>
+    <controller name="stiffjoints_hips"/>
+  </primitives>
+  <composite name="adjust" set_task="1.000000">
+    <initialpose target="[-0.01, 0.6, 0.058, -2.5, 0.058, -0.07, 1.71, 0.14, -0.17, -0.067, -0.109, -0.021, 2.05, -0.03, -0.889, 0.08, -0.0876, -0.065, 0.1, -0.21, 0.003, -0.089, 0.036, -0.219, -1.79, 0.8, 2.37, 0.4, 0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <terminate>
+      <timeout to="1.000000"/>
+    </terminate>
+    <evaluate>
+      <com value="[-0.1, 0.3, 0]" value2="[0, 0.35, 0]"/>
+      <comdot value="[0, 0, 0]"/>
+    </evaluate>
+    <rig>
+      <controller name="joints_hips" regression="[-0.219139, 0.43338]"/>
+    </rig>
+    <rig>
+      <controller name="armpose_a" regression="[0.792938, -0.592136]"/>
+    </rig>
+  </composite>
+
+  <composite name="split" set_task="0.000000" select="1">
+    <initialpose target="[-0.11, 0.6, 0.058, -2.5, 0.058, -0.07, 1.71, 0.14, -0.17, -0.067, -0.109, -0.021, 2.05, -0.03, -0.889, 0.08, -0.0876, -0.065, 0.1, -0.21, 0.003, -0.089, 0.036, -0.219, -1.79, 0.8, 2.37, 0.4, 0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <initialtargetpose target="[0.01, 0.65, 0.06, -2.97, -0, -0.12, 2.34, 0.13, -0.18, -0.038, -0.11, -0.04, 2.67, -0.033, -0.89, 0.082, -0.097, -0.11, 0.1, -0.24, 0, -0.13, 0.04, -0.2, -2.38, 0.96, 2.32, 0.39, 0.21, 2.33, -0.96, 2.35, -0.39]"/>
+    <terminate>
+      <timeout to="1.500000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0, 0.45, 0]"/>
+      <comdot value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <controller name="adjust" regression="[0.692, -0]"/>
+    </prev>
+    <rig>
+      <controller name="joints_hips" regression="[-0.508484, -0]"/>
+    </rig>
+    <rig>
+      <controller name="legpose_s" regression="[-0.58669, 0]"/>
+    </rig>
+  </composite>
+
+  <composite name="stay" set_task="0.000000" select="1">
+    <initialpose target="[-0.11, 0.6, 0.058, -2.5, 0.058, -0.07, 1.71, 0.14, -0.17, -0.067, -0.109, -0.021, 2.05, -0.03, -0.889, 0.08, -0.0876, -0.065, 0.1, -0.21, 0.003, -0.089, 0.036, -0.219, -1.79, 0.8, 2.37, 0.4, 0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <terminate>
+      <timeout to="1.600000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0, 0.45, 0]"/>
+      <comdot value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <controller name="split" regression="[0.0, -0]"/>
+    </prev>
+    <rig>
+      <controller name="joints_hips" regression="[-0.27484, -0]"/>
+    </rig>
+    <rig>
+      <controller name="armpose_a" regression="[-0.1, 0]"/>
+    </rig>
+    <rig>
+      <controller name="stiffjoints_hips" regression="[-0.079139, 0.0]"/>
+    </rig>
+  </composite>
+
+
+  <composite name="lift" set_task="0.000000">
+    <initialpose target="[-0.11, 0.6, 0.058, -2.5, 0.058, -0.07, 1.71, 0.14, -0.17, -0.067, -0.109, -0.021, 2.05, -0.03, -0.889, 0.08, -0.0876, -0.065, 0.1, -0.21, 0.003, -0.089, 0.036, -0.219, -1.79, 0.8, 2.37, 0.4, 0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <initialtargetpose target="[0.01, 0.65, 0.06, -2.97, -0, -0.12, 2.34, 0.13, -0.18, -0.038, -0.11, -0.04, 2.67, -0.033, -0.89, 0.082, -0.097, -0.11, 0.1, -0.24, 0, -0.13, 0.04, -0.2, -2.38, 0.96, 2.32, 0.39, 0.21, 2.33, -0.96, 2.35, -0.39]"/>
+    <terminate>
+      <timeout to="1.500000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0, 0.45, 0]"/>
+      <comdot value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <controller name="adjust" regression="[0.992, -0]"/>
+    </prev>
+    <rig>
+      <controller name="joints_knees" regression="[-0.986043, -0]"/>
+    </rig>
+    <rig>
+      <controller name="joints_hips" regression="[-0.348484, -0]"/>
+    </rig>
+    <rig>
+      <controller name="armpose_a" regression="[0.001669, 0]"/>
+    </rig>
+  </composite>
+  <composite name="extend" set_task="0.000000">
+    <initialpose target="[-0.11, 0.6, 0.058, -2.5, 0.058, -0.07, 1.71, 0.14, -0.17, -0.067, -0.109, -0.021, 2.05, -0.03, -0.889, 0.08, -0.0876, -0.065, 0.1, -0.21, 0.003, -0.089, 0.036, -0.219, -1.79, 0.8, 2.37, 0.4, 0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <initialtargetpose target="[-0.01, 0.65, 0.1, -2.78, 0.04, -0.17, 2.3677, 0.115, -2.696, -0.032, -0.114, -0.038, 2.6765, -0.041, -3.144, 0.091, -0.1, -0.109, 0.11, -0.31, 0.02, -0.09, 0.09, -0.195, -2.323, 0.97, 2.28, 0.39, 0.255, 2.187, -0.887, 2.35, -0.39]"/>
+    <terminate>
+      <timeout to="1.000000"/>
+    </terminate>
+    <evaluate>
+      <com value="[0, 0.55, 0]"/>
+      <comdot value="[0, 0, 0]"/>
+    </evaluate>
+    <prev>
+      <!-- <controller name="step1" regression="[0, 0]"/> -->
+      <controller name="lift" regression="[0.999999, 0]"/>
+    </prev>
+    <rig>
+      <!-- <controller name="legpose_d" regression="[0.7, 0]" desired="0.7"/> -->
+      <controller name="legpose_d" regression="[0.744612, 0]" desired="0.7"/>
+    </rig>
+    <rig>
+      <!-- <controller name="legpose_a" regression="[-0.6, 0]"/> -->
+      <controller name="legpose_a" regression="[-0.610187, 0]"/>
+    </rig>
+    <rig>
+      <!-- <controller name="armpose_a" regression="[0.1, 0]"/> -->
+      <controller name="armpose_a" regression="[0.178669, 0]"/>
+    </rig>
+  </composite>
+
+  <composite name="crouch" set_task="0.800000" select="1">
+    <initialpose target="[-0.018252, 0.910183, 0.0197288, 0.060145, -0.0178968, 0.0246285, 0.147482, 0.0726356, -0.524678, 0.306901, 0.0672088, -0.0298385, 0.168992, -0.0389543, -0.555721, 0.326725, -0.0620635, -0.0507227, -0.0543716, -0.373904, 0.00672551, -0.116332, -0.00615075, -0.261812, 0.214081, 0.656121, 1.1553, 0.225075, 0.266799, -0.151113, -0.548302, 1.14306, -0.215332]" />
+
+    <initialtargetpose target="[0, 0.93, 0, 0, 0, 0, 0.131345, 0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, 0.131345, -0.0776705, -0.420993, 0.287567, 0.0157129, -0.0223432, -0.0437274, -0.246748, 0.000462, -0.0857285, -0.00410161,
+                               -0.219, -1.79, 0.8, 2.37, 0.4,
+                               0.225749, 1.74, -0.78, 2.39, -0.4]"/>
+    <terminate>
+      <timeout to="0.825000"/>
+    </terminate>
+    <evaluate/>
+    <rig>
+      <controller name="legpose_d" regression="[-0.25981, -0.353226]"/>
+    </rig>
+    <rig>
+      <controller name="joints_hips" regression="[0.039305, 0.468586]"/>
+    </rig>
+    <rig>
+      <controller name="joints_heels" regression="[0.039305, 0.321002]"/>
+    </rig>
+  </composite>
+
+  <composite name="kick" set_task="0.700000" select="1">
+    <initialpose target="[-0.018252, 0.910183, 0.0197288, 0.060145, -0.0178968, 0.0246285, 0.147482, 0.0726356, -0.524678, 0.306901, 0.0672088, -0.0298385, 0.168992, -0.0389543, -0.555721, 0.326725, -0.0620635, -0.0507227, -0.0543716, -0.373904, 0.00672551, -0.116332, -0.00615075, -0.261812, 0.214081, 0.656121, 1.1553, 0.225075, 0.266799, -0.151113, -0.548302, 1.14306, -0.215332]" />
+
+    <terminate>
+      <timeout to="0.200000"/>
+    </terminate>
+    <evaluate>
+    </evaluate>
+    <prev>
+      <controller name="crouch" regression="[0.6, 0.0]" />
+    </prev>
+    <rig>
+      <controller name="vf_y" regression="[-0.7, 0.0]"/>
+    </rig>
+    <rig>
+      <controller name="vf_x" regression="[0.6, 0.0]"/>
+    </rig>
+  </composite>
+
+  <composite name="test2" set_task="0.000000" select="1">
+    <initialpose target="[-0.018252, 0.910183, 0.0197288, 0.060145, -0.0178968, 0.0246285, 0.147482, 0.0726356, -0.524678, 0.306901, 0.0672088, -0.0298385, 0.168992, -0.0389543, -0.555721, 0.326725, -0.0620635, -0.0507227, -0.0543716, -0.373904, 0.00672551, -0.116332, -0.00615075, -0.261812, 0.214081, 0.656121, 1.1553, 0.225075, 0.266799, -0.151113, -0.548302, 1.14306, -0.215332]" />
+    <terminate>
+      <timeout to="0.725000"/>
+    </terminate>
+    <prev>
+      <controller name="kick" regression="[0.70, 0.0]"/>
+    </prev>
+    <phase>
+      <controller name="split" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="stay" regression="[0.0, 0.0]"/>
+    </phase>
+    <rig activateIndex="split">
+      <controller name="armpose_a" regression="[-0.128669, 0]"/>
+    </rig>
+    <rig activateIndex="stay">
+      <controller name="armpose_a" regression="[0.128669, 0]"/>
+    </rig>
+
+    <evaluate/>
+  </composite>
+
+  <composite name="test" set_task="0.800000">
+    <initialpose target="[-0.018252, 0.910183, 0.0197288, 0.060145, -0.0178968, 0.0246285, 0.147482, 0.0726356, -0.524678, 0.306901, 0.0672088, -0.0298385, 0.168992, -0.0389543, -0.555721, 0.326725, -0.0620635, -0.0507227, -0.0543716, -0.373904, 0.00672551, -0.116332, -0.00615075, -0.261812, 0.214081, 0.656121, 1.1553, 0.225075, 0.266799, -0.151113, -0.548302, 1.14306, -0.215332]" />
+    <terminate>
+      <timeout to="0.725000"/>
+    </terminate>
+    <prev>
+      <controller name="crouch" regression="[0.717175, 0.3490146]"/>
+    </prev>
+    <phase>
+      <controller name="split" regression="[0.0, 0.0]"/>
+    </phase>
+    <phase>
+      <controller name="stay" regression="[0.0, 0.0]"/>
+    </phase>
+    <rig>
+      <controller name="armpose_a" regression="[-0.028669, 0]"/>
+    </rig>
+
+    <evaluate/>
+  </composite>
+
+</knowledge>
+
+

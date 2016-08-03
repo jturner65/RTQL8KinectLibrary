@@ -1,0 +1,10 @@
+--- src/apps/knowledge/gui/GuiKinController.h	
++++ src/apps/knowledge/gui/GuiKinController.h	
+@@ -78,7 +78,6 @@
+         }
+         virtual void parseSpeechCommand();
+         virtual void setDispButtons();
+-<<<<<<< local
+         virtual bool checkUIElements(int& x, int& y, int& d, bool isMouse, int hand, int evnt);
+         //build UI components
+ =======

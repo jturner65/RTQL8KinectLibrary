@@ -1,0 +1,390 @@
+<algorithm>
+  <grip activate="1">
+    <params user="sehoon" gripH="0.75" gripW="0.95" gripD="1.25"  />
+    <params user="john" gripH="0.75" gripW="0.95" gripD="1.25" />
+  </grip>
+</algorithm>
+
+<stateControl cmt="custom settings of state machine for kinect controller">
+  <handler name="KinectController">
+    <params type="flag" idx="_KC_PROC_2D_DGRAB" val="0" 									
+	    cmt="/process/display 2d hands grab functionality built in depth handler"/>
+
+  </handler>
+
+</stateControl>
+
+<class name="button" w="100" h="100" hsBrdrX="20" hsBrdrY="20"/>
+<class class="button" name="slot1" x="50"  y="50" r="0.1" g="0.4" b="1.0" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot2" x="200" y="50" r="1.0" g="0.4" b="0.0" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot3" x="350" y="50" r="0.0" g="1.0" b="0.0" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot4" x="500" y="50" r="0.0" g="1.0" b="1.0" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot5" x="650" y="50" r="0.0" g="0.4" b="0.7" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot6" x="800" y="50" r="1.0" g="0.2" b="0.5" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slot7" x="950" y="50" r="0.4" g="0.0" b="1.0" a="0.7"
+       src="btnblue.png" />
+<class class="button" name="slotb1" x="50"  y="600" r="0.0" g="0.4" b="0.1" a="0.7"
+       src="btngreen.png" />
+<class class="button" name="slotb2" x="200" y="600" r="0.0" g="0.6" b="1.0" a="0.7"
+       src="btngreen.png" />
+<class class="button" name="slotb3" x="350" y="600" r="0.7" g="0.1" b="3.0" a="0.7"
+       src="btngreen.png" />
+<class class="button" name="slotr1" x="1120" y="450" r="1.0" g="0.6" b="1.0" a="0.7"       
+       src="btnred.png" />
+<class class="button" name="slotr2" x="1120" y="600" r="1.0" g="0.6" b="1.0" a="0.7"       
+       src="btnred.png" />
+<class class="button" name="cancel" x="1120" y="600" r="1.0" g="0.6" b="1.0" a="0.7"       
+       src="btnred.png" />
+<class class="button" name="slotv1" x="50"  y="50" r="0.1" g="0.4" b="1.0" a="0.7"
+       src="btngreen.png" />
+<class class="button" name="slotv2" x="50" y="200" r="1.0" g="0.4" b="0.0" a="0.7"
+       src="btngreen.png" />
+
+<class class="button" name="slotv3" x="50" y="350" r="0.0" g="1.0" b="0.0" a="0.7"
+       src="btngreen.png" />
+<class name="hslider" x="250" y="50" w="100" h="100" r="0.8" g="0.1" b="0.0" a="0.7"/>
+<class name="hslider1" x="100" y="250" w="100" h="100" r="0.1" g="0.8" b="0.1" a="0.7"/>
+<class name="hslider2" x="100" y="400" w="100" h="100" r="1.0" g="0.4" b="0.0" a="0.7"/>
+<class name="vslider1" x="50" y="250" w="100" h="100" r="0.1" g="0.4" b="1.0" a="0.7" />
+<class name="vslider2" x="200" y="250" w="100" h="100" r="1.0" g="0.4" b="0.0" a="0.7" />
+
+
+<page name="start" onload="set:clear" >
+  <!-- <imgbutton onclick="page:create-name" class="slot1" src="smile.png">Create</imgbutton> -->
+  <imgbutton src="btngreen.png" x="1600" y="400" w="100" h="100" r="1.0" g="0.4" b="0.0" a="0.7">temp</imgbutton>
+
+  <imgbutton onclick="page:select" class="slotr1" >Select</imgbutton>
+  <imgbutton onclick="page:create-name" class="slotr2">Create</imgbutton>
+  <!-- <imgbutton onclick="page:command" class="slot1" src="btnblue.png">Command</imgbutton> -->
+
+  <imgbutton onclick="page:move" class="slot1">Move</imgbutton>
+  <imgbutton onclick="page:speed" class="slot2">Accel</imgbutton>
+  <imgbutton onclick="page:adjust" class="slot3">Adjust</imgbutton>
+  <imgbutton onclick="page:spin" class="slot4">Spin</imgbutton>
+  <!-- <imgbutton onclick="page:landing" class="slot4">Land</imgbutton> -->
+  <imgbutton onclick="page:balance" class="slot5">Balance</imgbutton>
+  <imgbutton onclick="page:relax" class="slot6">Relax</imgbutton>
+  <imgbutton onclick="page:misc" class="slot7">Misc</imgbutton>
+  <imgbutton onclick="page:pose" class="slotb1">Pose</imgbutton>
+
+
+
+</page>
+
+<page name="command" onload="set:clear" >
+  <imgbutton onclick="page:move" class="slot1">Move</imgbutton>
+  <imgbutton onclick="page:speed" class="slot2">Speed</imgbutton>
+  <imgbutton onclick="page:spin" class="slot3">Spin</imgbutton>
+  <imgbutton onclick="page:landing" class="slot4">Land</imgbutton>
+  <imgbutton onclick="page:balance" class="slot5">Balance</imgbutton>
+  <imgbutton onclick="page:relax" class="slot6">Relax</imgbutton>
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="misc" onload="set:clear" >
+  <imgbutton onclick="page:addtask" class="slot1">Task</imgbutton>
+  <imgbutton onclick="page:use" class="slot2">Add</imgbutton>
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="adjust" onload="hint:prefix joints_hips">>
+  <imgbutton onclick="" class="slot1">Shoulders</imgbutton>
+  <imgbutton onclick="" class="slot2">Hips</imgbutton>
+  <imgbutton onclick="page:addtaskupright" class="slot3">Torso</imgbutton>
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+
+<page name="create-name" onload="set:clear" >
+  <imgbutton onclick="set:name crouch;page:create-start" class="slot1">'Crouch'</imgbutton>
+  <imgbutton onclick="set:name thrust;page:create-start" class="slot2">'Thrust'</imgbutton>
+  <imgbutton onclick="set:name airborne;page:create-start" class="slot3">'Airborne'</imgbutton>
+  <imgbutton onclick="set:name landing;page:create-start" class="slot4">'Landing'</imgbutton>
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+
+<page name="create-start">
+  <imgbutton onclick="set:pose stand;page:create-terminate" class="slot1">Stand</imgbutton>
+  <imgbutton onclick="set:pose sit;page:create-terminate" class="slot2">Sit</imgbutton>
+  <imgbutton onclick="mode:ik;page:ikmode" class="slot4">New Pose</imgbutton>
+  <imgbutton onclick="page:create-prev" class="slotb1">prev phase</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="ikmode" >
+  <imgbutton onclick="set:pose @ik;page:ikmode-confirm" class="slot1">OK</imgbutton>
+  <timer class="hslider" sbarlen="300" dir="h" srange="10.0"
+         max="10" sdiv="0" incr="1"  ltor="0" 
+         onclick="set:pose @ik;page:ikmode-confirm"
+         >t</timer>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="ikmode-confirm" onload="mode:ui">
+  <imgbutton onclick="fixik:armsymmetry" class="slot1">Arm Symmetry</imgbutton>
+  <imgbutton onclick="fixik:legsymmetry" class="slot2">Leg Symmetry</imgbutton>
+
+  <imgbutton onclick="set:pose @ik;page:create-terminate" class="slotv3">OK</imgbutton>
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="create-terminate">
+  <imgbutton onclick="set:terminate timeout;set:t #t;page:create-ok" class="slotv1">Timeout</imgbutton>
+  <imgbutton onclick="set:terminate nocontacts;page:create-ok" class="slotv2">NoContacts</imgbutton>
+  <imgbutton onclick="set:terminate anycontacts;page:create-ok" class="slotv3">AnyContacts</imgbutton>
+
+  <slider class="hslider" sbarlen="300" dir="h" srange= "1.0" sdiv="0"
+          hsBrdrX="20" hsBrdrY="20">t</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+<!-- <page name="create4">Will create dynamically</page> -->
+
+<page name="create-ok">
+  <imgbutton onclick="create:;page:start" class="slot1">OK</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+<page name="move" onload="hint:prefix legpose">
+  <imgbutton onclick="page:movedown" class="slot1">Down</imgbutton>
+  <imgbutton onclick="page:moveforward" class="slot2">Forward</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="movedown" onload="hint:prefix legpose_d">
+  <imgbutton onclick="cmd:addrig legpose_d;cmd:movedown #v0 to #v1;page:start" 
+          class="slot1">OK</imgbutton>
+
+  <slider class="vslider1" sbarlen="300" min="0.0" max="1.0" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.0" max="1.0" dir="v" ltor="f"
+	  >v1</slider>
+  
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+<page name="moveforward" onload="hint:prefix joints_heels">
+  <imgbutton onclick="cmd:addrig joints_heels;cmd:moveforward #v0 to #v1;page:start" 
+          class="slot1">OK</imgbutton>
+
+  <slider class="hslider1" sbarlen="300" dir="h" min="0.0" max="1.0" sdiv="0"
+          hsBrdrX="20" hsBrdrY="20">v0</slider>
+  <slider class="hslider2" sbarlen="300" dir="h" min="0.0" max="1.0" sdiv="0"
+          hsBrdrX="20" hsBrdrY="20">v1</slider>
+  
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+
+<page name="speed" onload="hint:prefix vf">
+  <imgbutton onclick="page:speed-vertical" class="slot1">Vertical</imgbutton>
+  <imgbutton onclick="page:speed-horizontal" class="slot2">Horizontal</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="speed-vertical" onload="hint:prefix vf_y">
+  <imgbutton onclick="cmd:addrig vf_y;cmd:speed #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+
+  <slider class="vslider1" sbarlen="300" min="0.5" max="2.5" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.5" max="2.5" dir="v" ltor="f"
+	  >v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+<page name="speed-horizontal" onload="hint:prefix vf_y">
+  <imgbutton onclick="cmd:addrig vf_y;cmd:speedhori #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+
+  <slider class="hslider1" sbarlen="300" dir="h" min="0.0" max="2.5" sdiv="0"
+          hsBrdrX="20" hsBrdrY="20">v0</slider>
+  <slider class="hslider2" sbarlen="300" dir="h" min="0.0" max="2.5" sdiv="0"
+          hsBrdrX="20" hsBrdrY="20">v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+
+<page name="use">
+  <imgbutton onclick="page:addjoints" class="slot1">Joint</imgbutton>
+  <imgbutton onclick="page:addvf" class="slot2">Force</imgbutton>
+  <imgbutton onclick="page:addlegpose" class="slot3">LegPose</imgbutton>
+  <imgbutton onclick="page:addarmpose" class="slot4">ArmPose</imgbutton>
+  <imgbutton onclick="page:addfeedback" class="slot5">Feedback</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addjoints" onload="hint:prefix joints">
+  <imgbutton onclick="cmd:using joints_hips;page:start" class="slot1">Hips</imgbutton>
+  <imgbutton onclick="cmd:using joints_knees;page:start" class="slot2">Knees</imgbutton>
+  <imgbutton onclick="cmd:using joints_heels;page:start" class="slot3">Heels</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addvf" onload="hint:prefix vf">
+  <imgbutton onclick="cmd:using vf_y;page:start" class="slot1">Vertical</imgbutton>
+  <imgbutton onclick="cmd:using vf_x;page:start" class="slot2">Horizontal</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addlegpose" onload="hint:prefix legpose">
+  <imgbutton onclick="cmd:using legpose_d;page:start" class="slot1">Distance</imgbutton>
+  <imgbutton onclick="cmd:using legpose_a;page:start" class="slot2">Angle</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addarmpose" onload="hint:prefix armpose">
+  <imgbutton onclick="cmd:using armpose_a;page:start" class="slot1">Angle</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+<page name="addfeedback" onload="hint:prefix legpose">
+  <imgbutton onclick="cmd:using feedbackjoints_heels;page:start" class="slot1">Heels</imgbutton>
+  <imgbutton onclick="cmd:using feedbackjoints_hips;page:start" class="slot2">Hips</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+
+<page name="spin" onload="hint:prefix vf_x">
+  <imgbutton onclick="page:spin-fb" class="slot1">Forward/Backward</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+<page name="spin-fb" onload="hint:prefix vf_x">
+  <imgbutton onclick="cmd:addrig vf_x;cmd:spin #v0;page:start" class="slot1">OK</imgbutton>
+
+  <slider class="hslider" sbarlen="300" dir="h" min="-2.0" max="2.0" srange="4.0" sdiv="0" ltor="0">v0</slider>
+
+</page>
+
+
+<page name="landing" onload="hint:prefix legpose_a">
+  <imgbutton onclick="cmd:addrig legpose_a;cmd:addcost landing;page:start" class="slot1">OK</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+
+</page>
+
+<page name="balance" onload="hint:prefix feedbackjoints">
+  <imgbutton onclick="cmd:addrig joints_hips;cmd:addcost speed 0 to 0;page:start" class="slot1">Hip Strat</imgbutton>
+
+  <imgbutton onclick="cmd:addrig joints_heels;cmd:addcost speed 0 to 0;page:start" class="slot2">Heel Strat</imgbutton>
+
+  <!-- <slider class="vslider1" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f" -->
+  <!--         >v0</slider> -->
+
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="relax" onload="hint:prefix stiffjoints">
+  <imgbutton onclick="cmd:addrigas stiffjoints_hips -0.8;page:start" class="slot1">Hips</imgbutton>
+  <imgbutton onclick="cmd:addrigas stiffjoints_shoulders -0.8;page:start" class="slot2">Shoulders</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+<page name="addtask" onload="hint:prefix NO_NEW_RIGS">
+  <imgbutton onclick="page:addtaskcom" class="slot1">COM</imgbutton>
+  <imgbutton onclick="page:addtaskmincom" class="slot2">MINCOM</imgbutton>
+  <imgbutton onclick="page:addtaskmaxcom" class="slot3">MAXCOM</imgbutton>
+  <imgbutton onclick="page:addtaskcomdot" class="slot4">COMDot</imgbutton>
+  <imgbutton onclick="page:addtaskupright" class="slot5">Upright</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+<page name="addtaskcom">
+  <imgbutton onclick="cmd:movedown #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+  <slider class="vslider1" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addtaskmincom">
+  <imgbutton onclick="cmd:movemin #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+  <slider class="vslider1" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addtaskmaxcom">
+  <imgbutton onclick="cmd:movemax #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+  <slider class="vslider1" sbarlen="300" min="0.5" max="1.5" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.5" max="1.5" dir="v" ltor="f"
+	  >v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="addtaskcomdot">
+  <imgbutton onclick="cmd:speed #v0 to #v1;page:start" class="slot1">OK</imgbutton>
+  <slider class="vslider1" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v0</slider>
+  <slider class="vslider2" sbarlen="300" min="0.5" max="1.0" dir="v" ltor="f"
+	  >v1</slider>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+
+
+<page name="addtaskupright">
+  <imgbutton onclick="cmd:addrig joints_hips;cmd:addcost upright $A0 to $A1;page:start" class="slot1">OK</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+  <crank x="200" y="400" w="100" h="100" r="0.1" g="0.4" b="1.0" a="0.7"
+         cinit="90" crange="180" cpos="0.24" cdiv="10" min="0" max="360" 
+         cbarthick="20" cbarlen="300"
+         dir="ccw"
+         >A0</crank>
+  <crank x="400" y="400" w="100" h="100" r="0.1" g="0.4" b="1.0" a="0.7"
+         cinit="90" crange="180" cpos="0.24" cdiv="10" min="0" max="360" 
+         cbarthick="20" cbarlen="300"
+         dir="ccw"
+         >A1</crank>
+
+</page>
+
+<page name="pose">
+  <imgbutton onclick="set:body arms;mode:ik;page:poseik" class="slot1">Arms</imgbutton>
+  <imgbutton onclick="set:body legs;mode:ik;page:poseik" class="slot2">Legs</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="poseik" >
+  <imgbutton onclick="set:pose @ik;mode:ui;page:poseik-confirm" class="slot1">OK</imgbutton>
+  <timer class="hslider" sbarlen="300" dir="h" srange="10.0"
+         max="10" sdiv="0" incr="1"  ltor="0" 
+         onclick="set:pose @ik;mode:ui;page:poseik-confirm"
+         >t</timer>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>
+
+<page name="poseik-confirm" >
+  <imgbutton onclick="fixik:armsymmetry" class="slot1">Arm Symmetry</imgbutton>
+  <imgbutton onclick="fixik:legsymmetry" class="slot2">Leg Symmetry</imgbutton>
+  <imgbutton onclick="cmd:changetarget %body %pose;page:start" class="slot3">OK</imgbutton>
+  <imgbutton onclick="page:start" class="cancel">Cancel</imgbutton>
+</page>

@@ -1,0 +1,58 @@
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Sehoon Ha <sha9@gatech.edu>
+ * Georgia Tech Graphics Lab
+ */
+
+#ifndef OPERATION_OP_CONTROLLER_H
+#define OPERATION_OP_CONTROLLER_H
+
+#include <Eigen/Dense>
+#include "common/app_hppcommon.h"
+#include "operation.h"
+
+namespace controller {
+    class Knowledge;
+    class AppCompositeController;
+} // namespace controller
+
+namespace operation {
+    
+    class OpController : public Operation {
+    public:
+        OpController(controller::Knowledge* _kn);
+        virtual ~OpController();
+
+        bool setTerminateTimeout(double t);
+        bool setTerminateNoContacts();
+        bool setTerminateAnyContacts();
+        bool addRig(const char* const rig_name);
+        bool addRig(const char* const rig_name, double desiredParam);
+        bool addPrev(const char* const prev_name);
+        bool addCostLanding();
+        bool addCostUpright(double angleInDegree);
+        bool changeInitialPose(const Eigen::VectorXd& pose);
+        bool changeTargetPose(const char* const body, const Eigen::VectorXd& pose);
+        bool move(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1);
+        bool moveMax(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1);
+        bool moveMin(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1);
+        bool speed(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1);
+        bool spin(const Eigen::Vector3d& v0);
+        bool constraintPos(int node0, int node1, const Eigen::VectorXd& dir);
+
+        bool findCostTerm(int id, Eigen::Vector3d* v0, Eigen::Vector3d* v1);
+        bool findCOMTerm(Eigen::Vector3d* v0, Eigen::Vector3d* v1);
+        bool findCOMDotTerm(Eigen::Vector3d* v0, Eigen::Vector3d* v1);
+
+        bool exportCon(const char* const newname);
+        
+    protected:
+        MEMBER_PTR(controller::Knowledge*, kn);
+        controller::AppCompositeController* con();
+    }; // class OpController
+    
+} // namespace operation
+
+#endif // #ifndef OPERATION_OP_CONTROLLER_H
+

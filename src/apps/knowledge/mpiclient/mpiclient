@@ -1,0 +1,8 @@
+#ifndef MPICLIENT_MPICLIENT
+#define MPICLIENT_MPICLIENT
+
+#include "mpiclient.h"
+#include "mpilocalclient.h"
+#include "mpisshclient.h"
+
+#endif // #ifndef MPICLIENT_MPICLIENT

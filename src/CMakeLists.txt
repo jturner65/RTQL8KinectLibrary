@@ -1,0 +1,41 @@
+# all libraries
+ADD_SUBDIRECTORY(utils)
+ADD_SUBDIRECTORY(kinematics)
+ADD_SUBDIRECTORY(optimizer)
+ADD_SUBDIRECTORY(yui)
+ADD_SUBDIRECTORY(renderer)
+ADD_SUBDIRECTORY(geometry)
+ADD_SUBDIRECTORY(dynamics)
+ADD_SUBDIRECTORY(lcpsolver)
+ADD_SUBDIRECTORY(collision)
+ADD_SUBDIRECTORY(integration)
+ADD_SUBDIRECTORY(simulation)
+ADD_SUBDIRECTORY(toolkit)
+
+IF (WIN32)
+MESSAGE(STATUS "Configure kinect since OS is Win32")
+#####################################
+# Setup kinect variables
+# To Do: for future, export this to FindKinectSDK.cmake
+SET(KinectSDK_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/kinectUI_SDK/kinectSDK ${CMAKE_SOURCE_DIR}/thirdparty/kinectUI_SDK/speechSDK )
+SET(KinectSDK_KINLIB_DIR ${CMAKE_SOURCE_DIR}/thirdparty/kinectUI_SDK/kinectSDK/lib )
+SET(KinectSDK_SPCHLIB_DIR ${CMAKE_SOURCE_DIR}/thirdparty/kinectUI_SDK/speechSDK/lib )
+SET(KinectSDK_LIBRARIES Kinect10.lib FaceTrackLib.lib KinectFusion180_32.lib KinectInteraction180_32.lib 
+comctl32.lib Msdmo.lib dmoguids.lib amstrmid.lib avrt.lib SOIL.lib)
+SET(KinectSDK_FOUND 1)
+message(STATUS "KinectSDK_INCLUDE_DIR = ${KinectSDK_INCLUDE_DIR}")
+message(STATUS "KinectSDK_LIBRARIES   = ${KinectSDK_LIBRARIES}")
+INCLUDE_DIRECTORIES(${KinectSDK_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${KinectSDK_KINLIB_DIR})
+INCLUDE_DIRECTORIES(${KinectSDK_SPCHLIB_DIR})
+LINK_DIRECTORIES(${KinectSDK_KINLIB_DIR})
+LINK_DIRECTORIES(${KinectSDK_SPCHLIB_DIR})
+#####################################
+ADD_SUBDIRECTORY(kinect)
+ELSE()
+MESSAGE(STATUS "Do not configure kinect since OS is not Win32")
+ENDIF()
+
+# Apps
+ADD_SUBDIRECTORY(apps)
+

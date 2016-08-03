@@ -1,0 +1,214 @@
+<stateControl cmt="custom settings of state machine for kinect controller">
+</stateControl>
+
+<class name="button" w="125" h="75" hsBrdrX="20" hsBrdrY="20"/>
+<class class="button" name="slot1" x="50"  y="50" r="0.1" g="0.4" b="1.0" a="0.7"/>
+<class class="button" name="slot2" x="200" y="50" r="1.0" g="0.4" b="0.0" a="0.7"/>
+<class class="button" name="slot3" x="350" y="50" r="0.0" g="1.0" b="0.0" a="0.7"/>
+<class class="button" name="slot4" x="500" y="50" r="0.0" g="1.0" b="1.0" a="0.7"/>
+<class class="button" name="slot5" x="650" y="50" r="0.0" g="0.4" b="0.7" a="0.7"/>
+<class class="button" name="slot6" x="800" y="50" r="1.0" g="0.2" b="0.5" a="0.7"/>
+<class class="button" name="slot7" x="950" y="50" r="0.4" g="0.0" b="1.0" a="0.7"/>
+<class class="button" name="slotb1" x="50"  y="550" r="0.0" g="0.4" b="0.1" a="0.7"/>
+<class class="button" name="slotb2" x="200" y="550" r="0.0" g="0.6" b="1.0" a="0.7"/>
+<class class="button" name="slotb3" x="350" y="550" r="0.7" g="0.1" b="3.0" a="0.7"/>
+<class class="button" name="cancel" x="1000" y="550" r="1.0" g="0.6" b="1.0" a="0.7"/>
+<class class="button" name="slotv1" x="50"  y="50" r="0.1" g="0.4" b="1.0" a="0.7"/>
+<class class="button" name="slotv2" x="50" y="200" r="1.0" g="0.4" b="0.0" a="0.7"/>
+<class class="button" name="slotv3" x="50" y="350" r="0.0" g="1.0" b="0.0" a="0.7"/>
+<class name="hslider" x="250" y="50" w="100" h="100" r="0.8" g="0.1" b="0.0" a="0.7"/>
+<class name="vslider1" x="50" y="250" w="100" h="100" r="0.1" g="0.4" b="1.0" a="0.7" />
+<class name="vslider2" x="200" y="250" w="100" h="100" r="1.0" g="0.4" b="0.0" a="0.7" />
+
+
+<page name="start">
+  <button onclick="" class="slot1">Move</button>
+<!--  <button onclick="" class="slot2">Rotate</button>	-->
+  <imgbutton onclick="" class="slot2" src="smile.jpg">Rotate</imgbutton>
+  <button onclick="" class="slot3">Flex</button>
+  <button onclick="" class="slot4">LGrip</button>
+  <button onclick="" class="slot5">RGrip</button>
+  <button onclick="" class="slot6">LHandLoc</button>
+  <button onclick="" class="slot7">RHandLoc</button>
+</page>
+
+<!--
+    string sldLblNames[] = {"Angle", "Amount", "Speed","",""};									//labels for demo UI elements
+    string crnkLblNames[] = {"Deg 1","Deg 2", "", ""};
+    string imgButLblNames[] = {"Anim 1","Anim 2", "", ""};
+    string prgBarLblNames[] = {"Progress:", "", ""};
+    string timerLblNames[] = {"CD:", "", ""};
+    string tbLblNames[] = {"TextBox 1:", "TextBox 2:", ""};
+    string capLblNames[] = {"Caption 1:", "Caption 2:", ""};
+
+    string butMONames[] = {"Move Button","Rotate Button", "Flex Button", "Left Grip ", "Right Grip ","",""};
+    string sldMONames[] = {"Angle Slider", "Amount Slider", "Speed Slider","",""};				//labels for demo UI elements
+    string crnkMONames[] = {"Angle Crank 1","Angle Crank 2","",""};
+    string imgButMONames[] = {"Animation 1","Animation 2","",""};
+    string prgBarMONames[] = {"Progress Bar","",""};
+    string timerMONames[] = {"Count Down","",""};
+    string tbMONames[] = {"Text Box 1","Text Box 2",""};
+    string capMONames[] = {"Caption Text 1","Caption Text 2",""};
+
+
+    int cmpIdx = 0;
+    //starting values for buttons - upper left location, width, height, spacer
+    //click zone needs to be scaled by .75 of actual coords being painted.
+    int bx = 0, by = 0, bw = 120, bh = 75, bs = 70, _hsBrdrX = 35, _hsBrdrY = 50;
+    if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx]; ++i){			//buttons
+            Kin2dUIBtn[i]->setDisplayHotSpot(true);
+            Kin2dUIBtn[i]->setLoc(bx,by);
+            Kin2dUIBtn[i]->setDim(bw,bh);
+            Kin2dUIBtn[i]->setColor(.65f,.65f,.65f,1);
+            if(i<numCmps[0]-2){	Kin2dUIBtn[i]->setColor((i == 0) || (i == 3)? 1 : 0, (i == 1) || (i == 3) || (i == 4)? 1 : 0, (i == 2) || (i == 4) ? 1 : 0 ,1);}
+            Kin2dUIBtn[i]->setLabel(butLblNames[i]);
+            Kin2dUIBtn[i]->setMSOverTxt(butMONames[i]);
+            Kin2dUIBtn[i]->setHotSpot(_hsBrdrX, _hsBrdrY);										//use to delimit area around control for hand to snap to
+            bx += (bw + bs);
+        }
+        cmpIdx++;
+
+	//starting values for sliders :		
+    //_srng : range of slider values
+	//_sp : 0-1 position along slider -> 0 at top or left, 1 at bottom or right (based on orientation) mult by srng to get value of slider
+	//# of subdivisions of slider for discrete values - <= 0 means "continuous"
+	//dimensions of sliderbar track (where slider thumb moves)
+	//orientation of slider - true is horizontal, false is vertical
+
+	float _srng = 100, _sp = .3f;
+	//starting values for sliders - upper left location, width, height, spacer
+	bx = 150, by = bh + bs, bw = 75, bh = 85, bs = 70, _hsBrdrX = 50, _hsBrdrY = 35;		
+	int _sdv = 0, _slen = 200, _sthick = 40;
+	if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUISldr[i]->setLoc(bx,by);
+            Kin2dUISldr[i]->setDim(bw,bh);
+            Kin2dUISldr[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+            Kin2dUISldr[i]->setLabel(sldLblNames[i]);
+            Kin2dUISldr[i]->setMSOverTxt(sldMONames[i]);
+            Kin2dUISldr[i]->setSlideVals(_srng,_sp * (i+1),_sdv,_slen,_sthick);
+            Kin2dUISldr[i]->setIsHoriz((i != numCmps[1]-1 ? true : false));				//make last one vertical
+            Kin2dUISldr[i]->setIsLToR((i != numCmps[1]-1 ? true : false));				//make last one increasing up
+            Kin2dUISldr[i]->setHotSpot(_hsBrdrX, _hsBrdrY);								//use to delimit area around control for hand to snap to
+            by += (bh + bs);
+        }
+        cmpIdx++;
+
+    _srng = 360; _sp = .3f;
+    //starting values for cranks - upper left location, width, height, spacer
+    bx = 600, by = 400, bw = 100, bh = 70, bs = 80, _hsBrdrX = 80, _hsBrdrY = 80;		
+    int _sdv = 0, _slen = 250, _sthick = 20;	
+    if(numCmps.size() > cmpIdx){
+		for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUICrnk[i]->setLoc(bx,by);
+            Kin2dUICrnk[i]->setDim(bw,bh);
+            Kin2dUICrnk[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+            Kin2dUICrnk[i]->setLabel(crnkLblNames[i]);
+            Kin2dUICrnk[i]->setMSOverTxt(crnkMONames[i]);
+            Kin2dUICrnk[i]->setCrankVals(0, _srng,_sp * (i+1),_sdv,_slen,_sthick);
+            Kin2dUICrnk[i]->setIsClockWise((i != numCmps[1]-1 ? true : false));				
+            Kin2dUICrnk[i]->setHotSpot(_hsBrdrX, _hsBrdrY);							//use to delimit area around control for hand to snap to - set x and y borders
+            by += (bh + bs);
+		}
+        cmpIdx++;
+
+    //starting values for image buttons - upper left location, width, height, spacer
+    bx = 600, by = 200, bw = 200, bh = 150, bs = 80, _hsBrdrX = 50, _hsBrdrY = 50;		
+    int _sdv = 0, _slen = 250, _sthick = 20;	
+    if(numCmps.size() > cmpIdx){
+		for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUIImgBtn[i]->setLoc(bx,by);
+            Kin2dUIImgBtn[i]->setDim(bw,bh);
+            Kin2dUIImgBtn[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+            Kin2dUIImgBtn[i]->setLabel(imgButLblNames[i]);
+            Kin2dUIImgBtn[i]->setMSOverTxt(imgButMONames[i]);
+            Kin2dUIImgBtn[i]->setHotSpot(_hsBrdrX, _hsBrdrY);							//use to delimit area around control for hand to snap to - set x and y borders
+            Kin2dUIImgBtn[i]->setImgSrc(RTQL8_DATA_PATH"tardisCat.jpg");
+            by += (bh + bs);
+		}
+        cmpIdx++;
+
+	//starting values for progress bars - upper left location, width, height, spacer
+	bx = 850, by = 500, bw = 50, bh = 50, bs = 25, _hsBrdrX = 0, _hsBrdrY = 0;		
+	int _sdv = 0, _slen = 250, _sthick = 10;
+	if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUIProgBar[i]->setLoc(bx,by);
+            Kin2dUIProgBar[i]->setDim(bw,bh);
+            Kin2dUIProgBar[i]->setColor(0, 0, 1 ,1);
+            Kin2dUIProgBar[i]->setLabel(prgBarLblNames[i]);
+            Kin2dUIProgBar[i]->setMSOverTxt(prgBarMONames[i]);
+            Kin2dUIProgBar[i]->setSlideVals(100,0,_sdv,_slen,_sthick);
+            Kin2dUIProgBar[i]->setIsHoriz( true );			
+            Kin2dUIProgBar[i]->setHotSpot(_hsBrdrX, _hsBrdrY);								//use to delimit area around control for hand to snap to
+            Kin2dUIProgBar[i]->setIsLToR( true);                                            //direction : this prog bar is left to right
+            Kin2dUIProgBar[i]->reset();
+            by += (bh + bs);
+        }
+        cmpIdx++;        
+	//starting values for timers - upper left location, width, height, spacer
+	bx = 850, by = 650, bw = 50, bh = 50, bs = 25, _hsBrdrX = 0, _hsBrdrY = 0;		
+	int _sdv = 0, _slen = 250, _sthick = 10;
+	if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUITimer[i]->setLoc(bx,by);
+            Kin2dUITimer[i]->setDim(bw,bh);
+            Kin2dUITimer[i]->setColor(1, 0 ,0 ,1);
+            Kin2dUITimer[i]->setLabel(timerLblNames[i]);
+            Kin2dUITimer[i]->setMSOverTxt(timerMONames[i]);
+            Kin2dUITimer[i]->setSlideVals(5,0,_sdv,_slen,_sthick);
+            Kin2dUITimer[i]->setIsHoriz( true );			
+            Kin2dUITimer[i]->setHotSpot(_hsBrdrX, _hsBrdrY);								//use to delimit area around control for hand to snap to
+            Kin2dUITimer[i]->setIsLToR( false);                                              //direction - this timer moves right to left
+            Kin2dUITimer[i]->reset();
+            by += (bh + bs);
+        }
+        cmpIdx++;   
+	//starting values for textbox - upper left location, width, height, spacer
+	bx = 850, by = 150, bw = 120, bh = 50, bs = 50, _hsBrdrX = 50, _hsBrdrY = 50;		
+	int _sdv = 0, _slen = 250, _sthick = 10;
+	if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUITextBox[i]->setLoc(bx,by);
+            Kin2dUITextBox[i]->setDim(bw,bh);
+            Kin2dUITextBox[i]->setMaxChars((i+1) * 5);
+            Kin2dUITextBox[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+            Kin2dUITextBox[i]->setLabel(tbLblNames[i]);
+            Kin2dUITextBox[i]->setMSOverTxt(tbMONames[i]);
+            Kin2dUITextBox[i]->setHotSpot(_hsBrdrX, _hsBrdrY);								//use to delimit area around control for hand to snap to
+            by += (bh + _hsBrdrY + bs);
+        }
+        cmpIdx++;       
+	bx = 500, by = 700, bw = 120, bh = 50, bs = 50, _hsBrdrX = 50, _hsBrdrY = 50;		
+	int _sdv = 0, _slen = 250, _sthick = 10;
+	if(numCmps.size() > cmpIdx){
+        for(int i = 0; i < numCmps[cmpIdx];  ++i){
+            Kin2dUICaption[i]->setLoc(bx,by);
+            Kin2dUICaption[i]->setDim(bw,bh);
+            Kin2dUICaption[i]->setColor((i == 0) ? 0 : 1 ,(i == 1) ? 0 : 1, (i == 2) ? 0 : 1 ,1);
+            Kin2dUICaption[i]->setLabel(capLblNames[i]);
+            Kin2dUICaption[i]->setMSOverTxt(capMONames[i]);
+            Kin2dUICaption[i]->setHotSpot(0, 0);								//use to delimit area around control for hand to snap to
+            by += (bh + _hsBrdrY + bs);
+        }
+        cmpIdx++;        
+
+        //insert img buttons and timers here if any
+    }}}}}}}}//checking size of vector holding number of components
+    clog<<"Num buttons : "<<Kin2dUIBtn.size()<<endl;
+    clog<<"Num sliders : "<<Kin2dUISldr.size()<<endl;
+    clog<<"Num cranks : "<<Kin2dUICrnk.size()<<endl;
+    clog<<"Num imgButtons : "<<Kin2dUIImgBtn.size()<<endl;
+    clog<<"Num progress bars : "<<Kin2dUIProgBar.size()<<endl;
+    clog<<"Num timers : "<<Kin2dUITimer.size()<<endl;
+    clog<<"Num tbs : "<<Kin2dUITextBox.size()<<endl;
+    clog<<"Num captions : "<<Kin2dUICaption.size()<<endl;
+    clog<<"Num total : "<<Kin2dUICmp.size()<<endl;
+    for(int i = 0; i<Kin2dUICmp.size(); ++i){
+        Kin2dUICmp[i]->setDisplayHotSpot(true);
+        Kin2dUICmp[i]->setWinSize(winX, winY);
+        cout<<*Kin2dUICmp[i]<<endl;
+    }
+}//build2dUI
+-->
